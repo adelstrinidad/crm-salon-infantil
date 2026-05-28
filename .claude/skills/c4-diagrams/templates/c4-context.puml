@@ -1,0 +1,40 @@
+@startuml {system-name}-context
+!include <C4/C4_Context>
+
+title System Context Diagram - {System Name}
+
+' ==============================================================================
+' People / Actors
+' ==============================================================================
+Person(user, "{User Role}", "{User description - who they are and what they do}")
+
+' ==============================================================================
+' Internal Systems (systems you own/control)
+' ==============================================================================
+System(target_system, "{System Name}", "{System description - main purpose}")
+
+' ==============================================================================
+' External Systems (systems you integrate with)
+' ==============================================================================
+System_Ext(external_system_1, "{External System 1}", "{Purpose and what it provides}")
+System_Ext(external_system_2, "{External System 2}", "{Purpose and what it provides}")
+
+' ==============================================================================
+' Relationships (interactions and data flows)
+' ==============================================================================
+Rel(user, target_system, "{Action verb}", "{Protocol/Technology - e.g., HTTPS/Browser}")
+Rel(target_system, external_system_1, "{Action verb}", "{Protocol - e.g., REST/JSON}")
+Rel(external_system_2, target_system, "{Action verb}", "{Protocol - e.g., HTTPS/Callback}")
+
+' ==============================================================================
+' Optional: Add organizational boundaries
+' ==============================================================================
+' Enterprise_Boundary(org, "Organization Name") {
+'   System(...)
+' }
+
+' ==============================================================================
+' Legend
+' ==============================================================================
+SHOW_LEGEND()
+@enduml

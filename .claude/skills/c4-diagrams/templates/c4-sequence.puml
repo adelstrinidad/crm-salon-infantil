@@ -1,0 +1,36 @@
+@startuml {scenario-name}-sequence
+!include <C4/C4_Dynamic>
+
+title Dynamic Diagram - {Scenario Name}
+
+' ==============================================================================
+' Define Containers/Components
+' ==============================================================================
+ContainerDb(database, "{Database}", "{Technology}", "{Description}")
+Container(api, "{API}", "{Technology}", "{Description}")
+Container(web, "{Web App}", "{Technology}", "{Description}")
+Person(user, "{User}", "{Description}")
+
+' ==============================================================================
+' Sequence of interactions for specific scenario
+' ==============================================================================
+Rel(user, web, "1. {Action - e.g., Submits form}", "HTTPS")
+Rel(web, api, "2. {Action - e.g., POST /api/endpoint}", "REST/JSON")
+Rel(api, database, "3. {Action - e.g., SELECT query}", "SQL")
+Rel(database, api, "4. {Action - e.g., Returns data}", "Result set")
+Rel(api, web, "5. {Action - e.g., Returns response}", "JSON")
+Rel(web, user, "6. {Action - e.g., Displays result}", "HTML")
+
+' ==============================================================================
+' Notes and annotations
+' ==============================================================================
+' note right of api
+'   Important business rule:
+'   {Explanation of rule or constraint}
+' end note
+
+' ==============================================================================
+' Legend
+' ==============================================================================
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,46 @@
+@startuml {system-name}-container
+!include <C4/C4_Container>
+
+title Container Diagram - {System Name}
+
+' ==============================================================================
+' People / Actors
+' ==============================================================================
+Person(user, "{User Role}", "{User description}")
+
+' ==============================================================================
+' External Systems
+' ==============================================================================
+System_Ext(external_system, "{External System}", "{Description}")
+
+' ==============================================================================
+' System Boundary
+' ==============================================================================
+System_Boundary(system_boundary, "{System Name}") {
+    ' Web / UI Containers
+    Container(web_app, "{Web Application}", "{Technology - e.g., React, Angular}", "{Description - what it does}")
+
+    ' API / Backend Containers
+    Container(api, "{API Application}", "{Technology - e.g., .NET Core, Spring Boot}", "{Description - business logic}")
+
+    ' Database Containers
+    ContainerDb(database, "{Database}", "{Technology - e.g., PostgreSQL, MongoDB}", "{Description - what data it stores}")
+
+    ' Queue / Message Broker Containers (if applicable)
+    ContainerQueue(queue, "{Message Queue}", "{Technology - e.g., RabbitMQ, Kafka}", "{Description - async processing}")
+}
+
+' ==============================================================================
+' Relationships
+' ==============================================================================
+Rel(user, web_app, "Uses", "HTTPS")
+Rel(web_app, api, "Makes API calls to", "REST/JSON over HTTPS")
+Rel(api, database, "Reads from and writes to", "SQL/TCP")
+Rel(api, queue, "Publishes messages to", "AMQP")
+Rel(api, external_system, "Integrates with", "REST/JSON")
+
+' ==============================================================================
+' Legend
+' ==============================================================================
+SHOW_LEGEND()
+@enduml

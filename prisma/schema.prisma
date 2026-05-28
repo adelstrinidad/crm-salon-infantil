@@ -1,0 +1,175 @@
+// Prisma schema — crm-salon-infantil
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+// Maps Bonete event states. SENADO = "Señado" (deposit paid).
+enum EventState {
+  PRESUPUESTADO // quoted, not yet confirmed
+  RESERVADO     // confirmed reservation
+  SENADO        // deposit ("seña") received
+  PAGADO        // fully paid
+  CERRADO       // closed / complete
+  SUSPENDIDO    // cancelled / suspended
+}
+
+// ─── Client ───────────────────────────────────────────────────────────────────
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]
+}
+
+// ─── Event Type catalog ───────────────────────────────────────────────────────
+model EventType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Event ───────────────────────────────────────────────────────────────────
+model Event {
+  id          String             @id @default(cuid())
+  name        String
+  eventType   String
+  clientName  String
+  clientId    String?
+  startAt     DateTime
+  endAt       DateTime
+  state       EventState         @default(PRESUPUESTADO)
+  details     String?
+  notes       String?
+  totalPrice  Float              @default(0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  client      Client?            @relation(fields: [clientId], references: [id])
+  services    EventService[]
+  providers   EventProvider[]
+  bonificados EventBonificado[]
+}
+
+// ─── Proveedor (external vendor linked to a service) ─────────────────────────
+model Proveedor {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  phone       String?
+  email       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  services    Service[]
+}
+
+// ─── Service catalog ─────────────────────────────────────────────────────────
+model Service {
+  id           String         @id @default(cuid())
+  name         String
+  cost         Float          @default(0)  // what the venue pays
+  price        Float          @default(0)  // what the client pays
+  proveedorId  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  proveedor    Proveedor?     @relation(fields: [proveedorId], references: [id])
+  events       EventService[]
+  bonificados  EventBonificado[] @relation("BonificadoService")
+}
+
+// ─── Event ↔ Service join ─────────────────────────────────────────────────────
+model EventService {
+  id        String    @id @default(cuid())
+  eventId   String
+  serviceId String
+  qty       Int       @default(1)
+  paid      Boolean   @default(false)
+  paidAt    DateTime?
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  service   Service   @relation(fields: [serviceId], references: [id])
+
+  @@unique([eventId, serviceId])
+}
+
+// ─── Bonificados (complimentary / waived services) ───────────────────────────
+model EventBonificado {
+  id        String  @id @default(cuid())
+  eventId   String
+  serviceId String
+  qty       Int     @default(1)
+  event     Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  service   Service @relation("BonificadoService", fields: [serviceId], references: [id])
+
+  @@unique([eventId, serviceId])
+}
+
+// ─── Prestador (provider / staff) ────────────────────────────────────────────
+model Provider {
+  id        String          @id @default(cuid())
+  name      String
+  role      String?                         // e.g. "DJ", "Fotógrafo", "Animador"
+  cost      Float           @default(0)     // what the venue pays them per event
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  events    EventProvider[]
+}
+
+// ─── Event ↔ Provider join ────────────────────────────────────────────────────
+model EventProvider {
+  id         String    @id @default(cuid())
+  eventId    String
+  providerId String
+  paid       Boolean   @default(false)
+  paidAt     DateTime?
+  event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  provider   Provider  @relation(fields: [providerId], references: [id])
+
+  @@unique([eventId, providerId])
+}
+
+// ─── Finanzas ─────────────────────────────────────────────────────────────────
+
+enum MovementType {
+  INGRESO
+  EGRESO
+  TRANSFERENCIA
+  ARQUEO
+  INVERSION
+  RETIRO
+}
+
+model Account {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  movements   Movement[] @relation("AccountMovements")
+  inbound     Movement[] @relation("AccountInbound")
+}
+
+model Movement {
+  id            String       @id @default(cuid())
+  accountId     String
+  toAccountId   String?      // only for TRANSFERENCIA
+  type          MovementType
+  amount        Float
+  description   String?
+  date          DateTime     @default(now())
+  eventId       String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  account       Account      @relation("AccountMovements", fields: [accountId], references: [id])
+  toAccount     Account?     @relation("AccountInbound", fields: [toAccountId], references: [id])
+}

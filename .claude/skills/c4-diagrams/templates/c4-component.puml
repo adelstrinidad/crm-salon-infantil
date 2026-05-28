@@ -1,0 +1,46 @@
+@startuml {container-name}-component
+!include <C4/C4_Component>
+
+title Component Diagram - {Container Name}
+
+' ==============================================================================
+' External Containers
+' ==============================================================================
+Container(web_app, "{Web Application}", "{Technology}", "{Description}")
+ContainerDb(database, "{Database}", "{Technology}", "{Description}")
+
+' ==============================================================================
+' Container Boundary (showing internal components)
+' ==============================================================================
+Container_Boundary(container_boundary, "{Container Name}") {
+    ' Controllers / API Endpoints
+    Component(controller, "{Controller/API}", "{Technology - e.g., REST Controller}", "{Description - handles HTTP requests}")
+
+    ' Business Logic / Services
+    Component(service, "{Business Service}", "{Technology - e.g., Service Class}", "{Description - implements business rules}")
+
+    ' Data Access / Repository
+    Component(repository, "{Repository}", "{Technology - e.g., Data Access Layer}", "{Description - database operations}")
+
+    ' Domain Model (if applicable)
+    Component(model, "{Domain Model}", "{Technology - e.g., Domain Entities}", "{Description - business entities}")
+
+    ' Integration / Adapters (if applicable)
+    Component(adapter, "{External Adapter}", "{Technology - e.g., HTTP Client}", "{Description - external integrations}")
+}
+
+' ==============================================================================
+' Relationships
+' ==============================================================================
+Rel(web_app, controller, "Makes API calls to", "REST/JSON")
+Rel(controller, service, "Uses", "Method calls")
+Rel(service, repository, "Uses", "Method calls")
+Rel(service, model, "Uses", "Object references")
+Rel(repository, database, "Reads from and writes to", "SQL")
+Rel(service, adapter, "Uses", "Method calls")
+
+' ==============================================================================
+' Legend
+' ==============================================================================
+SHOW_LEGEND()
+@enduml

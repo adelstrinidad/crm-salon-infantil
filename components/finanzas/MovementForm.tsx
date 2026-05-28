@@ -1,0 +1,107 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
+import { movementFormInputSchema, MovementType, MOVEMENT_TYPE_LABELS, type MovementFormInput } from "@/lib/finanzas/schema";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+
+type Account = { id: string; name: string };
+
+type Props = {
+  onSubmit: (d: MovementFormInput) => Promise<{ ok: boolean; error?: string }>;
+  accounts: Account[];
+  defaultValues?: Partial<MovementFormInput>;
+  submitLabel: string;
+  cancelHref?: string;
+};
+
+export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, cancelHref = "/finanzas" }: Props) {
+  const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const {
+    register, handleSubmit, watch,
+    formState: { errors, isSubmitting },
+  } = useForm<MovementFormInput>({
+    resolver: zodResolver(movementFormInputSchema),
+    defaultValues: {
+      type: MovementType.INGRESO,
+      amount: "0",
+      date: new Date().toISOString().slice(0, 10),
+      ...defaultValues,
+    },
+  });
+
+  const watchType = watch("type");
+  const isTransfer = watchType === MovementType.TRANSFERENCIA;
+
+  const submit = handleSubmit(async (data) => {
+    setServerError(null);
+    const result = await onSubmit(data);
+    if (result.ok) { router.push(cancelHref); router.refresh(); }
+    else setServerError(result.error ?? "Error al guardar");
+  });
+
+  return (
+    <form onSubmit={submit} className="space-y-6 max-w-md">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="type">Tipo</Label>
+          <select id="type" {...register("type")} className="w-full border rounded px-2 py-1.5 text-sm">
+            {Object.values(MovementType).map((t) => (
+              <option key={t} value={t}>{MOVEMENT_TYPE_LABELS[t]}</option>
+            ))}
+          </select>
+          {errors.type && <p className="text-sm text-red-600">{errors.type.message}</p>}
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="amount">Monto</Label>
+          <Input id="amount" type="number" step="0.01" {...register("amount")} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="accountId">Cuenta origen</Label>
+          <select id="accountId" {...register("accountId")} className="w-full border rounded px-2 py-1.5 text-sm">
+            <option value="">Seleccionar…</option>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+          {errors.accountId && <p className="text-sm text-red-600">{errors.accountId.message}</p>}
+        </div>
+        {isTransfer && (
+          <div className="space-y-1">
+            <Label htmlFor="toAccountId">Cuenta destino</Label>
+            <select id="toAccountId" {...register("toAccountId")} className="w-full border rounded px-2 py-1.5 text-sm">
+              <option value="">Seleccionar…</option>
+              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="date">Fecha</Label>
+          <Input id="date" type="date" {...register("date")} />
+          {errors.date && <p className="text-sm text-red-600">{errors.date.message}</p>}
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="description">Descripción</Label>
+          <Input id="description" {...register("description")} placeholder="Opcional" />
+        </div>
+      </div>
+
+      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      <div className="flex gap-3">
+        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Guardando…" : submitLabel}</Button>
+        <Link href={cancelHref} className={cn(buttonVariants({ variant: "outline" }))}>Cancelar</Link>
+      </div>
+    </form>
+  );
+}
