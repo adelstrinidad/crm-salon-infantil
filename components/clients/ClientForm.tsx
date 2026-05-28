@@ -52,6 +52,14 @@ export function ClientForm({ onSubmit, defaultValues, submitLabel }: Props) {
         </div>
       </div>
       <div className="space-y-1">
+        <Label htmlFor="dni">DNI</Label>
+        <Input id="dni" {...register("dni")} placeholder="12.345.678" />
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="address">Dirección</Label>
+        <Input id="address" {...register("address")} placeholder="Calle, número, ciudad" />
+      </div>
+      <div className="space-y-1">
         <Label htmlFor="notes">Notas</Label>
         <Textarea id="notes" {...register("notes")} rows={3} placeholder="Observaciones sobre el cliente…" />
       </div>

@@ -42,6 +42,7 @@ export const movementFormInputSchema = z.object({
   amount: z.string(),
   description: z.string().optional(),
   date: z.string().min(1, "La fecha es requerida"),
+  eventId: z.string().optional(),
 });
 export type MovementFormInput = z.infer<typeof movementFormInputSchema>;
 
@@ -50,5 +51,6 @@ export const movementSchema = movementFormInputSchema.transform((d) => ({
   amount: parseFloat(d.amount ?? "0"),
   date: new Date(d.date),
   toAccountId: d.toAccountId || undefined,
+  eventId: d.eventId || undefined,
 }));
 export type MovementFormValues = z.output<typeof movementSchema>;

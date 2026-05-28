@@ -19,6 +19,7 @@ export async function pagarPrestadorAction(
     description,
     date: new Date(),
     toAccountId: undefined,
+    eventId: undefined,
   });
   revalidatePath("/pagos/prestadores");
   revalidatePath("/finanzas");

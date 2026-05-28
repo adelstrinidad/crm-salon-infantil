@@ -14,6 +14,7 @@ import {
   EventFormInput,
   EventState,
 } from "@/lib/events/schema";
+import type { ClientFormInput } from "@/lib/clients/schema";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { AddClientModal } from "@/components/clientes/AddClientModal";
+import { ClientCombobox } from "@/components/clientes/ClientCombobox";
 
 const STATE_LABELS: Record<EventState, string> = {
   PRESUPUESTADO: "Presupuestado",
@@ -44,6 +47,10 @@ type AvailableProvider = { id: string; name: string; role: string | null; cost: 
 type AvailableEventType = { id: string; name: string };
 type AvailableClient = { id: string; name: string };
 
+type CreateClientResult =
+  | { ok: true; client: { id: string; name: string } }
+  | { ok: false; error: string };
+
 type EventFormProps = {
   onSubmit: (data: EventFormInput, lines?: EventLines) => Promise<{ ok: boolean; id?: string; error?: string }>;
   defaultValues?: Partial<EventFormInput>;
@@ -53,6 +60,7 @@ type EventFormProps = {
   availableProviders?: AvailableProvider[];
   eventTypes?: AvailableEventType[];
   clients?: AvailableClient[];
+  createClient?: (data: ClientFormInput) => Promise<CreateClientResult>;
 };
 
 export function EventForm({
@@ -64,6 +72,7 @@ export function EventForm({
   availableProviders,
   eventTypes,
   clients,
+  createClient,
 }: EventFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -76,6 +85,13 @@ export function EventForm({
   // Inline provider picker state
   const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>([]);
   const [pendingProviderId, setPendingProviderId] = useState("");
+
+  // Client selector state
+  const [localClients, setLocalClients] = useState<AvailableClient[]>(clients ?? []);
+  const [selectedClientId, setSelectedClientId] = useState(defaultValues?.clientId ?? "");
+
+  // Client creation modal state
+  const [showAddClient, setShowAddClient] = useState(false);
 
   const {
     register,
@@ -92,6 +108,14 @@ export function EventForm({
       ...defaultValues,
     },
   });
+
+  const handleClientCreated = (c: { id: string; name: string }) => {
+    setLocalClients((prev) => [...prev, c]);
+    setSelectedClientId(c.id);
+    setValue("clientId", c.id);
+    setValue("clientName", c.name, { shouldValidate: true });
+    setShowAddClient(false);
+  };
 
   const addService = () => {
     if (!pendingServiceId) return;
@@ -170,30 +194,43 @@ export function EventForm({
           )}
           {errors.eventType && <p className="text-sm text-red-600">{errors.eventType.message}</p>}
         </div>
+
         <div className="space-y-1">
-          <Label htmlFor="clientName">Cliente</Label>
-          {clients && clients.length > 0 ? (
-            <select
-              onChange={(e) => {
-                const selected = clients.find((c) => c.id === e.target.value);
-                if (selected) {
-                  setValue("clientId", selected.id);
-                  setValue("clientName", selected.name);
-                } else {
-                  setValue("clientId", undefined);
-                }
-              }}
-              defaultValue={defaultValues?.clientId ?? ""}
-              className="w-full border rounded px-2 py-1.5 text-sm"
-            >
-              <option value="">Seleccionar o escribir abajo…</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          ) : null}
-          <Input id="clientName" {...register("clientName")} placeholder="Nombre del cliente" />
-          {errors.clientName && <p className="text-sm text-red-600">{errors.clientName.message}</p>}
+          <div className="flex items-center justify-between">
+            <Label>Cliente</Label>
+            {createClient && !showAddClient && (
+              <button
+                type="button"
+                onClick={() => setShowAddClient(true)}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                + Agregar cliente
+              </button>
+            )}
+          </div>
+
+          {createClient && (
+            <AddClientModal
+              open={showAddClient}
+              onClose={() => setShowAddClient(false)}
+              onCreated={handleClientCreated}
+              createClient={createClient}
+            />
+          )}
+
+          <ClientCombobox
+            clients={localClients}
+            value={selectedClientId}
+            onChange={(id, name) => {
+              setSelectedClientId(id);
+              setValue("clientId", id);
+              setValue("clientName", name, { shouldValidate: true });
+            }}
+          />
+          <input type="hidden" {...register("clientName")} />
+          {errors.clientName && (
+            <p className="text-sm text-red-600">Seleccioná un cliente o creá uno nuevo</p>
+          )}
         </div>
       </div>
 
@@ -241,7 +278,7 @@ export function EventForm({
 
       <div className="space-y-1">
         <Label htmlFor="details">Detalles</Label>
-        <Textarea id="details" {...register("details")} rows={4} placeholder="Información del evento…" />
+        <Textarea id="details" {...register("details")} rows={8} placeholder="Información del evento…" />
       </div>
 
       <div className="space-y-1">

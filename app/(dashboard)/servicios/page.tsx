@@ -23,6 +23,7 @@ export default async function ServiciosPage() {
           <thead>
             <tr className="border-b text-left">
               <th className="py-2 pr-4">Nombre</th>
+              <th className="py-2 pr-4">Descripción</th>
               <th className="py-2 pr-4">Proveedor</th>
               <th className="py-2 pr-4">Costo</th>
               <th className="py-2 pr-4">Precio</th>
@@ -34,6 +35,7 @@ export default async function ServiciosPage() {
             {services.map((s) => (
               <tr key={s.id} className="border-b hover:bg-muted/40">
                 <td className="py-2 pr-4">{s.name}</td>
+                <td className="py-2 pr-4 text-muted-foreground text-xs max-w-[200px] truncate">{s.description ?? "—"}</td>
                 <td className="py-2 pr-4 text-muted-foreground">{s.proveedor?.name ?? "—"}</td>
                 <td className="py-2 pr-4">${s.cost.toFixed(2)}</td>
                 <td className="py-2 pr-4">${s.price.toFixed(2)}</td>

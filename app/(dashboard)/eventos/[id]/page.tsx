@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getEventWithAll } from "@/lib/events/eventProviderLines";
-import { getMovementsByEvent } from "@/lib/finanzas/finanzasService";
+import { getMovementsByEvent, listAccounts } from "@/lib/finanzas/finanzasService";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { EventState } from "@/lib/events/schema";
+import { RegistrarCobroPanel } from "./RegistrarCobroPanel";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -37,9 +38,10 @@ function fmtDate(d: Date) {
 export default async function EventoDetailPage({ params }: Props) {
   const { id } = await params;
 
-  const [event, movements] = await Promise.all([
+  const [event, movements, accounts] = await Promise.all([
     getEventWithAll(id).catch(() => null),
     getMovementsByEvent(id),
+    listAccounts(),
   ]);
   if (!event) return notFound();
 
@@ -76,12 +78,22 @@ export default async function EventoDetailPage({ params }: Props) {
             {STATE_LABELS[event.state as EventState]}
           </span>
         </div>
-        <Link
-          href={`/eventos/${id}/editar`}
-          className={cn(buttonVariants({ variant: "outline" }))}
-        >
-          Editar
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/eventos/${id}/editar`}
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Editar
+          </Link>
+          <Link
+            href={`/eventos/${id}/presupuesto`}
+            target="_blank"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Generar presupuesto
+          </Link>
+          <RegistrarCobroPanel eventId={id} saldo={saldo} accounts={accounts} />
+        </div>
       </div>
 
       {/* Info + Financial summary */}

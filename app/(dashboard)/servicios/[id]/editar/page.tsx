@@ -17,6 +17,7 @@ export default async function EditarServicioPage({ params }: Props) {
 
   const defaultValues: ServiceFormInput = {
     name: service.name,
+    description: service.description ?? "",
     cost: String(service.cost),
     price: String(service.price),
     proveedorId: service.proveedorId ?? "",

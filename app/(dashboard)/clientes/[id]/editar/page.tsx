@@ -12,10 +12,12 @@ export default async function EditarClientePage({ params }: Props) {
   if (!client) return notFound();
 
   const defaultValues: ClientFormInput = {
-    name:  client.name,
-    phone: client.phone ?? "",
-    email: client.email ?? "",
-    notes: client.notes ?? "",
+    name:    client.name,
+    dni:     client.dni ?? "",
+    phone:   client.phone ?? "",
+    email:   client.email ?? "",
+    address: client.address ?? "",
+    notes:   client.notes ?? "",
   };
 
   async function handleSubmit(data: ClientFormInput) {

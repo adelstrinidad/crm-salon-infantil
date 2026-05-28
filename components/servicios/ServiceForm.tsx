@@ -52,6 +52,11 @@ export function ServiceForm({ onSubmit, defaultValues, submitLabel, proveedores 
         {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
       </div>
 
+      <div className="space-y-1">
+        <Label htmlFor="description">Descripción</Label>
+        <Input id="description" {...register("description")} placeholder="Descripción del servicio…" />
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="cost">Costo (lo que pagás)</Label>

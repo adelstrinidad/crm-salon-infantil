@@ -25,8 +25,10 @@ enum EventState {
 model Client {
   id        String   @id @default(cuid())
   name      String
+  dni       String?
   phone     String?
   email     String?
+  address   String?
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,6 +80,7 @@ model Proveedor {
 model Service {
   id           String         @id @default(cuid())
   name         String
+  description  String?
   cost         Float          @default(0)  // what the venue pays
   price        Float          @default(0)  // what the client pays
   proveedorId  String?

@@ -14,6 +14,16 @@ export async function createClientAction(input: ClientFormInput): Promise<Action
   return { ok: true };
 }
 
+export async function quickCreateClientAction(
+  input: ClientFormInput,
+): Promise<{ ok: true; client: { id: string; name: string } } | { ok: false; error: string }> {
+  const parsed = clientFormSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  const client = await createClient(parsed.data);
+  revalidatePath("/clientes");
+  return { ok: true, client: { id: client.id, name: client.name } };
+}
+
 export async function updateClientAction(id: string, input: ClientFormInput): Promise<ActionResult> {
   const parsed = clientFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
