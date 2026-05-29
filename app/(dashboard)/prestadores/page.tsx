@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Plus, UserCog } from "lucide-react";
 import { listProviders } from "@/lib/providers/providerService";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
 import { DeleteProviderButton } from "./DeleteProviderButton";
@@ -15,13 +17,24 @@ export default async function PrestadoresPage() {
         title="Prestadores"
         action={
           <Link href="/prestadores/nuevo" className={cn(buttonVariants())}>
-            + Nuevo prestador
+            <Plus className="size-4" />
+            Nuevo prestador
           </Link>
         }
       />
 
       {providers.length === 0 ? (
-        <p className="text-muted-foreground">No hay prestadores todavía.</p>
+        <EmptyState
+          icon={UserCog}
+          title="Todavía no hay prestadores"
+          description="Sumá al personal y proveedores de servicio (DJ, animador, fotógrafo…) que asignás a los eventos."
+          action={
+            <Link href="/prestadores/nuevo" className={cn(buttonVariants())}>
+              <Plus className="size-4" />
+              Nuevo prestador
+            </Link>
+          }
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">

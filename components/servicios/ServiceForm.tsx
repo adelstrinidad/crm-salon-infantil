@@ -9,6 +9,7 @@ import { serviceFormInputSchema, type ServiceFormInput } from "@/lib/services/sc
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
 type Proveedor = { id: string; name: string };
@@ -57,7 +58,7 @@ export function ServiceForm({ onSubmit, defaultValues, submitLabel, proveedores 
         <Input id="description" {...register("description")} placeholder="Descripción del servicio…" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="cost">Costo (lo que pagás)</Label>
           <Input id="cost" type="number" step="0.01" {...register("cost")} />
@@ -71,16 +72,12 @@ export function ServiceForm({ onSubmit, defaultValues, submitLabel, proveedores 
       {proveedores.length > 0 && (
         <div className="space-y-1">
           <Label htmlFor="proveedorId">Proveedor externo</Label>
-          <select
-            id="proveedorId"
-            {...register("proveedorId")}
-            className="w-full border rounded px-3 py-2 text-sm"
-          >
+          <NativeSelect id="proveedorId" {...register("proveedorId")}>
             <option value="">Sin proveedor</option>
             {proveedores.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       )}
 

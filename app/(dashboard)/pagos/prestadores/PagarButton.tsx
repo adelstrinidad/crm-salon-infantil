@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { pagarPrestadorAction } from "./actions";
 
 type Account = { id: string; name: string };
@@ -38,15 +45,20 @@ export function PagarButton({ eventProviderId, amount, description, accounts }: 
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <select
+      <Select
+        items={Object.fromEntries(accounts.map((a) => [a.id, a.name]))}
         value={accountId}
-        onChange={(e) => setAccountId(e.target.value)}
-        className="border border-border bg-background rounded px-2 py-1 text-xs"
+        onValueChange={(v) => setAccountId(v as string)}
       >
-        {accounts.map((a) => (
-          <option key={a.id} value={a.id}>{a.name}</option>
-        ))}
-      </select>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="Cuenta" />
+        </SelectTrigger>
+        <SelectContent>
+          {accounts.map((a) => (
+            <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Button onClick={handle} disabled={loading || !accountId} size="xs">
         {loading ? "…" : "Confirmar"}
       </Button>

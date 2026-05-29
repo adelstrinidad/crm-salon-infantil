@@ -36,7 +36,7 @@ export function ClientCombobox({ clients, value, onChange }: Props) {
         type="button"
         role="combobox"
         aria-expanded={open}
-        className="w-full flex items-center justify-between border rounded px-3 py-2 text-sm bg-background hover:bg-muted/50"
+        className="h-9 w-full flex items-center justify-between rounded-lg border border-input bg-card px-3 text-sm transition-colors outline-none hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <span className={cn(!selected && "text-muted-foreground")}>
           {selected ? selected.name : "Seleccionar cliente…"}

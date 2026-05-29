@@ -8,6 +8,8 @@ import { Money, signTone } from "@/components/ui/money";
 import { Pager } from "@/components/ui/pager";
 import { parsePage, buildPaginated } from "@/lib/pagination";
 import { formatMoney } from "@/lib/money";
+import { SelectFilter } from "@/components/ui/select-filter";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DeleteMovementButton } from "../DeleteMovementButton";
 
@@ -63,34 +65,34 @@ export default async function MovimientosPage({ searchParams }: Props) {
       {/* Filters */}
       <Card className="p-4">
         <form method="GET" className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
+          <div className="space-y-1 w-full sm:w-40">
             <label className="text-sm font-medium">Desde</label>
-            <input type="date" name="from" defaultValue={localDate(from)} className="border border-border bg-background rounded-md px-2 py-1.5 text-sm" />
+            <Input type="date" name="from" defaultValue={localDate(from)} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 w-full sm:w-40">
             <label className="text-sm font-medium">Hasta</label>
-            <input type="date" name="to" defaultValue={localDate(to)} className="border border-border bg-background rounded-md px-2 py-1.5 text-sm" />
+            <Input type="date" name="to" defaultValue={localDate(to)} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 w-full sm:w-44">
             <label className="text-sm font-medium">Cuenta</label>
-            <select name="accountId" defaultValue={params.accountId ?? ""} className="border border-border bg-background rounded-md px-2 py-1.5 text-sm">
-              <option value="">Todas</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
+            <SelectFilter
+              name="accountId"
+              defaultValue={params.accountId ?? ""}
+              allLabel="Todas"
+              options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+            />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 w-full sm:w-44">
             <label className="text-sm font-medium">Tipo</label>
-            <select name="type" defaultValue={params.type ?? ""} className="border border-border bg-background rounded-md px-2 py-1.5 text-sm">
-              <option value="">Todos</option>
-              {Object.values(MovementType).map((t) => (
-                <option key={t} value={t}>{MOVEMENT_TYPE_LABELS[t]}</option>
-              ))}
-            </select>
+            <SelectFilter
+              name="type"
+              defaultValue={params.type ?? ""}
+              allLabel="Todos"
+              options={Object.values(MovementType).map((t) => ({ value: t, label: MOVEMENT_TYPE_LABELS[t] }))}
+            />
           </div>
-          <Button type="submit" size="sm">Filtrar</Button>
-          <Link href="/finanzas/movimientos" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          <Button type="submit">Filtrar</Button>
+          <Link href="/finanzas/movimientos" className={cn(buttonVariants({ variant: "outline" }))}>
             Limpiar
           </Link>
         </form>

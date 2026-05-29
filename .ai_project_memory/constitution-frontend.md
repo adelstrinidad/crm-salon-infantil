@@ -118,6 +118,38 @@ lib/                         # Shared logic + types (see backend constitution)
 - Adding TanStack Query / Zustand before there is a real client-state need
 - Validating only on the client — always validate again in the Server Action
 - Giant components mixing fetching, layout, and logic
+- **Native `<select>` for in-app dropdowns** — the option list is OS-rendered and unstyleable; use the shadcn `Select` (see §X)
+- **Fixed full-width sidebar with no mobile fallback** — always provide the drawer pattern (see §X)
+- Raw `<input>` / `<select>` with ad-hoc classes instead of the `ui/` primitives — heights/borders drift and rows misalign
+
+---
+
+## X. Design System & Responsive UI
+
+Greenfield design language: warm "Sage & Clay" Montessori palette (tokens in `app/globals.css`), minimalist but intentional. Build from `components/ui/` primitives — never hand-roll control chrome.
+
+### Controls (consistency is non-negotiable)
+- **One control height: `h-9`.** `Input`, `Select` trigger, `NativeSelect`, date inputs, and the **default `Button`** are all `h-9` so they align in a row. Don't reintroduce `h-8`.
+- **Dropdowns — pick by context:**
+  - **In-app forms** (create/edit, pickers, modals) → shadcn **`Select`** (Radix). Styled popover + themed options. With react-hook-form, drive it with `setValue` + a hidden `register` input; pass an **`items` map** to `Select` so the trigger shows the *label*, not the raw value/id.
+  - **GET filter forms** (list-page filters) → **`SelectFilter`** (`components/ui/select-filter.tsx`): a Radix Select + hidden input so the browser still submits. Uses an `__all__` sentinel for the "Todas/Todos" (no-filter) option since Radix forbids empty values.
+  - Plain `NativeSelect` only when an empty-string option is required (e.g. "Sin proveedor") and a JS popover isn't worth it.
+- **Hidden inputs** (RHF/GET) must be wrapped with their control in a single `<div>` — never left as a bare `space-y` sibling, or they add a phantom 4px gap that misaligns the field.
+- Inputs/selects use `bg-card`; money via `formatMoney` (cents — see backend constitution).
+
+### Layout & responsiveness (mobile must work)
+- **Responsive shell**: persistent sidebar `hidden lg:flex`; below `lg` a top bar + hamburger opens a slide-over drawer (`components/dashboard/Sidebar.tsx`). `main` is `min-w-0` + `p-4 sm:p-6 lg:p-8` so tables scroll instead of overflowing.
+- **Form rows stack on mobile**: `grid-cols-1 sm:grid-cols-2`, never bare `grid-cols-2`.
+- **Lists**: desktop table (`hidden md:block`) + mobile card list (`md:hidden`) for the heavy lists (events, movements, payments).
+- Root `app/layout.tsx`: `lang="es"` + a `viewport` export.
+
+### Texture (so it doesn't read as "empty / 90s")
+- **Icons** (lucide) in nav items, primary buttons (`+ Nuevo` → `Plus`), and empty states.
+- **Empty states** use `EmptyState` (`components/ui/empty-state.tsx`): icon-in-tinted-circle + title + description + CTA — never a bare "No hay…" line.
+- Keep secondary text contrast ≥ WCAG AA (avoid `/50` opacity on small labels).
+
+### Verify before shipping UI
+- Drive the running app with Playwright at **390px and ≥1280px**; for alignment doubts, measure `getBoundingClientRect()` rather than eyeballing.
 
 ---
 

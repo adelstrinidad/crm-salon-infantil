@@ -64,15 +64,12 @@ export function AddClientModal({ open, onClose, onCreated, createClient }: Props
         </DialogHeader>
 
         <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1 col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1 sm:col-span-2">
               <Label htmlFor="ac-name">Nombre completo *</Label>
               <Input id="ac-name" {...register("name")} placeholder="Nombre y apellido" />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="ac-phone">Teléfono</Label>
               <Input id="ac-phone" {...register("phone")} placeholder="11 1234-5678" />
@@ -82,23 +79,18 @@ export function AddClientModal({ open, onClose, onCreated, createClient }: Props
               <Input id="ac-email" type="email" {...register("email")} placeholder="correo@ejemplo.com" />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="ac-dni">DNI</Label>
               <Input id="ac-dni" {...register("dni")} placeholder="12.345.678" />
             </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="ac-address">Dirección</Label>
-            <Input id="ac-address" {...register("address")} placeholder="Calle, número, ciudad" />
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="ac-notes">Notas</Label>
-            <Textarea id="ac-notes" {...register("notes")} rows={3} placeholder="Información adicional del cliente…" />
+            <div className="space-y-1">
+              <Label htmlFor="ac-address">Dirección</Label>
+              <Input id="ac-address" {...register("address")} placeholder="Calle, número, ciudad" />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label htmlFor="ac-notes">Notas</Label>
+              <Textarea id="ac-notes" {...register("notes")} rows={3} placeholder="Información adicional del cliente…" />
+            </div>
           </div>
 
           {serverError && <p className="text-sm text-destructive font-medium">{serverError}</p>}

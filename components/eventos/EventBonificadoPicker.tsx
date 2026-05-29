@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { addBonificadoAction, removeBonificadoAction } from "@/app/(dashboard)/eventos/[id]/bonificados-actions";
 import { SectionTitle } from "@/components/ui/section-title";
 import { formatMoney } from "@/lib/money";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type BonificadoLine = {
   serviceId: string;
@@ -91,18 +98,22 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
         <div className="flex gap-2 items-end">
           <div className="flex-1 space-y-1">
             <label className="text-sm font-medium">Agregar bonificado</label>
-            <select
+            <Select
+              items={Object.fromEntries(unattached.map((s) => [s.id, `${s.name} (${formatMoney(s.price)})`]))}
               value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full border rounded px-2 py-1.5 text-sm"
+              onValueChange={(v) => setSelectedId((v as string) ?? "")}
             >
-              <option value="">Seleccionar…</option>
-              {unattached.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({formatMoney(s.price)})
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar…" />
+              </SelectTrigger>
+              <SelectContent>
+                {unattached.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} ({formatMoney(s.price)})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="w-20 space-y-1">
             <label className="text-sm font-medium">Cant.</label>

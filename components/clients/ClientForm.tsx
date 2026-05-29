@@ -40,7 +40,7 @@ export function ClientForm({ onSubmit, defaultValues, submitLabel }: Props) {
         <Input id="name" {...register("name")} placeholder="María García" />
         {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="phone">Teléfono</Label>
           <Input id="phone" {...register("phone")} placeholder="+54 11 1234-5678" />

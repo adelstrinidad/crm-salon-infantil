@@ -8,6 +8,13 @@ import { Label } from "@/components/ui/label";
 import { SectionTitle } from "@/components/ui/section-title";
 import { Money } from "@/components/ui/money";
 import { formatMoney, centsToPesos, parsePesosToCents } from "@/lib/money";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Account = { id: string; name: string };
 
@@ -85,15 +92,20 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
                 {accounts.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Sin cuentas configuradas.</p>
                 ) : (
-                  <select
+                  <Select
+                    items={Object.fromEntries(accounts.map((a) => [a.id, a.name]))}
                     value={accountId}
-                    onChange={(e) => setAccountId(e.target.value)}
-                    className="w-full border border-border bg-background rounded-lg px-3 py-2 text-sm"
+                    onValueChange={(v) => setAccountId(v as string)}
                   >
-                    {accounts.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleccionar…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
 
@@ -107,7 +119,7 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label>Importe *</Label>
                   <Input

@@ -20,6 +20,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Plus } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -173,16 +174,28 @@ export function EventForm({
         {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
-          <Label htmlFor="eventType">Tipo de evento</Label>
+          <div className="flex items-center h-6">
+            <Label htmlFor="eventType">Tipo de evento</Label>
+          </div>
           {eventTypes && eventTypes.length > 0 ? (
-            <select id="eventType" {...register("eventType")} className="w-full border rounded px-2 py-1.5 text-sm">
-              <option value="">Seleccionar…</option>
-              {eventTypes.map((t) => (
-                <option key={t.id} value={t.name}>{t.name}</option>
-              ))}
-            </select>
+            <div className="w-full">
+              <input type="hidden" {...register("eventType")} />
+              <Select
+                defaultValue={defaultValues?.eventType ?? ""}
+                onValueChange={(v) => setValue("eventType", (v as string) ?? "", { shouldValidate: true })}
+              >
+                <SelectTrigger className="w-full" aria-label="Tipo de evento">
+                  <SelectValue placeholder="Seleccionar…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {eventTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           ) : (
             <Input id="eventType" {...register("eventType")} placeholder="Cumpleaños" />
           )}
@@ -190,15 +203,16 @@ export function EventForm({
         </div>
 
         <div className="space-y-1">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 h-6">
             <Label>Cliente</Label>
             {createClient && !showAddClient && (
               <button
                 type="button"
                 onClick={() => setShowAddClient(true)}
-                className="text-xs text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
               >
-                + Agregar cliente
+                <Plus className="size-3.5" />
+                Agregar cliente
               </button>
             )}
           </div>
@@ -228,7 +242,7 @@ export function EventForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="startAt">Inicio</Label>
           <Input id="startAt" type="datetime-local" {...register("startAt")} />
@@ -243,14 +257,15 @@ export function EventForm({
 
       {/* Estado only shown in edit mode — create mode uses Presupuestar/Reservar buttons */}
       {submitVariant === "edit" && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>Estado</Label>
             <Select
+              items={Object.fromEntries(Object.values(EventState).map((s) => [s, statusBadgeLabel(s)]))}
               defaultValue={defaultValues?.state ?? EventState.PRESUPUESTADO}
               onValueChange={(v) => setValue("state", v as EventState)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccione estado" />
               </SelectTrigger>
               <SelectContent>
@@ -298,16 +313,20 @@ export function EventForm({
             <div className="flex gap-2 items-end">
               <div className="flex-1 space-y-1">
                 <Label>Agregar servicio</Label>
-                <select
+                <Select
+                  items={Object.fromEntries(unaddedServices.map((s) => [s.id, s.name]))}
                   value={pendingServiceId}
-                  onChange={(e) => setPendingServiceId(e.target.value)}
-                  className="w-full border rounded px-2 py-1.5 text-sm"
+                  onValueChange={(v) => setPendingServiceId((v as string) ?? "")}
                 >
-                  <option value="">Seleccionar…</option>
-                  {unaddedServices.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unaddedServices.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="w-20 space-y-1">
                 <Label>Cant.</Label>
@@ -344,18 +363,22 @@ export function EventForm({
             <div className="flex gap-2 items-end">
               <div className="flex-1 space-y-1">
                 <Label>Agregar prestador</Label>
-                <select
+                <Select
+                  items={Object.fromEntries(unaddedProviders.map((p) => [p.id, `${p.name}${p.role ? ` (${p.role})` : ""}`]))}
                   value={pendingProviderId}
-                  onChange={(e) => setPendingProviderId(e.target.value)}
-                  className="w-full border rounded px-2 py-1.5 text-sm"
+                  onValueChange={(v) => setPendingProviderId((v as string) ?? "")}
                 >
-                  <option value="">Seleccionar…</option>
-                  {unaddedProviders.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}{p.role ? ` (${p.role})` : ""}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unaddedProviders.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}{p.role ? ` (${p.role})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button type="button" variant="secondary" onClick={addProvider} disabled={!pendingProviderId}>
                 Agregar

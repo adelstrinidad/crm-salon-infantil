@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { addProviderAction, removeProviderAction } from "@/app/(dashboard)/eventos/[id]/providers-actions";
 import { SectionTitle } from "@/components/ui/section-title";
 import { formatMoney } from "@/lib/money";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type ProviderLine = {
   providerId: string;
@@ -88,18 +95,22 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
         <div className="flex gap-2 items-end">
           <div className="flex-1 space-y-1">
             <label className="text-sm font-medium">Agregar prestador</label>
-            <select
+            <Select
+              items={Object.fromEntries(unattached.map((p) => [p.id, `${p.name}${p.role ? ` (${p.role})` : ""}`]))}
               value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full border rounded px-2 py-1.5 text-sm"
+              onValueChange={(v) => setSelectedId((v as string) ?? "")}
             >
-              <option value="">Seleccionar…</option>
-              {unattached.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}{p.role ? ` (${p.role})` : ""}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar…" />
+              </SelectTrigger>
+              <SelectContent>
+                {unattached.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}{p.role ? ` (${p.role})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button onClick={handleAdd} disabled={busy || !selectedId} size="sm">
             Agregar
