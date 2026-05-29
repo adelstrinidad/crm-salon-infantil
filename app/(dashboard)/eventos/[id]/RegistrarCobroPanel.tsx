@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { registrarCobroAction } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { SectionTitle } from "@/components/ui/section-title";
 import { Money } from "@/components/ui/money";
 
@@ -50,19 +53,23 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="px-4 py-2 text-sm rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-      >
+      <Button onClick={() => setOpen(true)} variant="outline" size="sm">
         Registrar cobro
-      </button>
+      </Button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-card rounded-xl shadow-xl w-full max-w-md mx-4 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <SectionTitle>Registrar cobro</SectionTitle>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground text-xl leading-none">×</button>
+              <Button
+                onClick={() => setOpen(false)}
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Cerrar"
+              >
+                ×
+              </Button>
             </div>
 
             {saldo > 0 && (
@@ -74,14 +81,14 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
 
             <div className="space-y-3">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Cuenta *</label>
+                <Label>Cuenta *</Label>
                 {accounts.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Sin cuentas configuradas.</p>
                 ) : (
                   <select
                     value={accountId}
                     onChange={(e) => setAccountId(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-border bg-background rounded-lg px-3 py-2 text-sm"
                   >
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>{a.name}</option>
@@ -91,35 +98,32 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium">Descripción / Concepto</label>
-                <input
+                <Label>Descripción / Concepto</Label>
+                <Input
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Ej: Seña, Saldo final…"
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Importe *</label>
-                  <input
+                  <Label>Importe *</Label>
+                  <Input
                     type="number"
                     min="0"
                     step="0.01"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Fecha</label>
-                  <input
+                  <Label>Fecha</Label>
+                  <Input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
               </div>
@@ -128,19 +132,20 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             <div className="flex gap-3 pt-1">
-              <button
+              <Button
                 onClick={handle}
                 disabled={loading || !accountId || !amount}
-                className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+                className="flex-1"
               >
                 {loading ? "Registrando…" : "Cobrar"}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setOpen(false)}
-                className="flex-1 py-2 rounded-lg border text-sm hover:bg-muted/50"
+                variant="outline"
+                className="flex-1"
               >
                 Cancelar
-              </button>
+              </Button>
             </div>
           </div>
         </div>

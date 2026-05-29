@@ -1,0 +1,177 @@
+import path from "path";
+import { PrismaClient } from "../app/generated/prisma/client";
+import { PrismaLibSql } from "@prisma/adapter-libsql";
+
+const dbUrl = `file:${path.resolve("dev.db")}`;
+const adapter = new PrismaLibSql({ url: dbUrl });
+const prisma = new PrismaClient({ adapter });
+
+async function main() {
+  console.log("Seeding database…");
+
+  // ─── Event types ──────────────────────────────────────────────────────────
+  const eventTypes = ["Cumpleaños", "Aniversario", "Empresarial", "Baby shower", "Egreso"];
+  for (const name of eventTypes) {
+    await prisma.eventType.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+
+  // ─── Accounts ─────────────────────────────────────────────────────────────
+  const accountSeed = [
+    { name: "Caja", description: "Efectivo en mano" },
+    { name: "Banco", description: "Cuenta bancaria principal" },
+    { name: "Mercado Pago", description: "Billetera virtual" },
+  ];
+  const accounts: Record<string, string> = {};
+  for (const a of accountSeed) {
+    const existing = await prisma.account.findFirst({ where: { name: a.name } });
+    const acc = existing ?? (await prisma.account.create({ data: a }));
+    accounts[a.name] = acc.id;
+  }
+
+  // ─── Proveedores ──────────────────────────────────────────────────────────
+  const proveedorSeed = [
+    { name: "Pastelería Dulce", phone: "+54 11 1111-1111" },
+    { name: "Decoradora Magia", phone: "+54 11 2222-2222" },
+    { name: "Catering Sabores", phone: "+54 11 3333-3333" },
+  ];
+  const proveedores: Record<string, string> = {};
+  for (const p of proveedorSeed) {
+    const existing = await prisma.proveedor.findFirst({ where: { name: p.name } });
+    const prov = existing ?? (await prisma.proveedor.create({ data: p }));
+    proveedores[p.name] = prov.id;
+  }
+
+  // ─── Services ─────────────────────────────────────────────────────────────
+  const serviceSeed = [
+    { name: "Salón (3 hs)", cost: 5000, price: 25000, proveedorId: null },
+    { name: "Torta temática", cost: 8000, price: 18000, proveedorId: proveedores["Pastelería Dulce"] },
+    { name: "Decoración con globos", cost: 4000, price: 12000, proveedorId: proveedores["Decoradora Magia"] },
+    { name: "Catering kids", cost: 6000, price: 15000, proveedorId: proveedores["Catering Sabores"] },
+    { name: "Animación", cost: 0, price: 10000, proveedorId: null },
+    { name: "Fotografía", cost: 0, price: 14000, proveedorId: null },
+  ];
+  const services: Record<string, string> = {};
+  for (const s of serviceSeed) {
+    const existing = await prisma.service.findFirst({ where: { name: s.name } });
+    const svc = existing ?? (await prisma.service.create({ data: s }));
+    services[s.name] = svc.id;
+  }
+
+  // ─── Providers (staff) ────────────────────────────────────────────────────
+  const providerSeed = [
+    { name: "Lucas Pérez", role: "DJ", cost: 8000 },
+    { name: "Mariana Gómez", role: "Animadora", cost: 7000 },
+    { name: "Carlos Ruiz", role: "Fotógrafo", cost: 10000 },
+  ];
+  const providers: Record<string, string> = {};
+  for (const p of providerSeed) {
+    const existing = await prisma.provider.findFirst({ where: { name: p.name } });
+    const prov = existing ?? (await prisma.provider.create({ data: p }));
+    providers[p.name] = prov.id;
+  }
+
+  // ─── Clients ──────────────────────────────────────────────────────────────
+  const clientSeed = [
+    { name: "Familia García", phone: "+54 11 5555-1234", email: "garcia@example.com" },
+    { name: "Familia López", phone: "+54 11 5555-5678", email: "lopez@example.com" },
+    { name: "Familia Martínez", phone: "+54 11 5555-9999", email: "martinez@example.com" },
+  ];
+  const clients: Record<string, string> = {};
+  for (const c of clientSeed) {
+    const existing = await prisma.client.findFirst({ where: { name: c.name } });
+    const cli = existing ?? (await prisma.client.create({ data: c }));
+    clients[c.name] = cli.id;
+  }
+
+  // ─── Sample events (only if events table is empty) ────────────────────────
+  const eventCount = await prisma.event.count();
+  if (eventCount === 0) {
+    const now = new Date();
+    const day = (offset: number, h = 16) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() + offset);
+      d.setHours(h, 0, 0, 0);
+      return d;
+    };
+
+    await prisma.event.create({
+      data: {
+        name: "Cumple Mateo (5 años)",
+        eventType: "Cumpleaños",
+        clientName: "Familia García",
+        clientId: clients["Familia García"],
+        startAt: day(7, 15),
+        endAt: day(7, 18),
+        state: "RESERVADO",
+        totalPrice: 70000,
+        services: {
+          create: [
+            { serviceId: services["Salón (3 hs)"], qty: 1 },
+            { serviceId: services["Torta temática"], qty: 1 },
+            { serviceId: services["Animación"], qty: 1 },
+          ],
+        },
+        providers: {
+          create: [{ providerId: providers["Mariana Gómez"] }],
+        },
+      },
+    });
+
+    await prisma.event.create({
+      data: {
+        name: "Baby shower Sofía",
+        eventType: "Baby shower",
+        clientName: "Familia López",
+        clientId: clients["Familia López"],
+        startAt: day(14, 17),
+        endAt: day(14, 20),
+        state: "PRESUPUESTADO",
+        totalPrice: 55000,
+        services: {
+          create: [
+            { serviceId: services["Salón (3 hs)"], qty: 1 },
+            { serviceId: services["Catering kids"], qty: 1 },
+          ],
+        },
+      },
+    });
+
+    await prisma.event.create({
+      data: {
+        name: "Cumple Lucía (3 años)",
+        eventType: "Cumpleaños",
+        clientName: "Familia Martínez",
+        clientId: clients["Familia Martínez"],
+        startAt: day(-7, 16),
+        endAt: day(-7, 19),
+        state: "PAGADO",
+        totalPrice: 85000,
+        services: {
+          create: [
+            { serviceId: services["Salón (3 hs)"], qty: 1 },
+            { serviceId: services["Decoración con globos"], qty: 1 },
+            { serviceId: services["Fotografía"], qty: 1 },
+          ],
+        },
+        providers: {
+          create: [{ providerId: providers["Carlos Ruiz"] }],
+        },
+      },
+    });
+  }
+
+  console.log("Seed complete.");
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

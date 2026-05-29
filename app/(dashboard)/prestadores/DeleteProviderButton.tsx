@@ -1,7 +1,6 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { deleteProviderAction } from "./actions";
 
 export function DeleteProviderButton({ id }: { id: string }) {
@@ -10,11 +9,8 @@ export function DeleteProviderButton({ id }: { id: string }) {
     await deleteProviderAction(id);
   }
   return (
-    <button
-      onClick={handleDelete}
-      className={cn(buttonVariants({ variant: "destructive", size: "sm" }))}
-    >
+    <Button onClick={handleDelete} variant="destructive" size="sm">
       Eliminar
-    </button>
+    </Button>
   );
 }

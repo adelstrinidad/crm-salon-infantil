@@ -6,9 +6,11 @@ import { Calendar, dateFnsLocalizer, View, Views } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import Link from "next/link";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { statusBadgeLabel } from "@/components/ui/status-badge";
+import { buttonVariants } from "@/components/ui/button";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -137,12 +139,9 @@ export function CalendarClient({ events, defaultDateMs }: Props) {
               />
             </PopoverContent>
           </Popover>
-          <a
-            href="/eventos/nuevo"
-            className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
+          <Link href="/eventos/nuevo" className={buttonVariants({ size: "sm" })}>
             + Nuevo evento
-          </a>
+          </Link>
         </div>
       </div>
 

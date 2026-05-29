@@ -142,7 +142,7 @@ export default async function ReportesPage({ searchParams }: Props) {
                     <td className="px-4 py-2 text-right text-loss">{fmt(grouped.reduce((s, r) => s + r.serviceCost, 0))}</td>
                     <td className="px-4 py-2 text-right text-loss">{fmt(grouped.reduce((s, r) => s + r.providerCost, 0))}</td>
                     <td className="px-4 py-2 text-right text-accent">{fmt(grouped.reduce((s, r) => s + r.totalBonificado, 0))}</td>
-                    <td className={cn("px-4 py-2 text-right font-bold", moneyToneClass(signTone(totalProfit)))}>
+                    <td className={cn("px-4 py-2 text-right font-semibold", moneyToneClass(signTone(totalProfit)))}>
                       {fmt(totalProfit)}
                     </td>
                   </tr>

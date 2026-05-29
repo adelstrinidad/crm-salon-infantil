@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { pagarPrestadorAction } from "./actions";
 
 type Account = { id: string; name: string };
@@ -29,12 +30,9 @@ export function PagarButton({ eventProviderId, amount, description, accounts }: 
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-      >
+      <Button onClick={() => setOpen(true)} size="xs">
         Pagar
-      </button>
+      </Button>
     );
   }
 
@@ -43,25 +41,18 @@ export function PagarButton({ eventProviderId, amount, description, accounts }: 
       <select
         value={accountId}
         onChange={(e) => setAccountId(e.target.value)}
-        className="border rounded px-2 py-1 text-xs"
+        className="border border-border bg-background rounded px-2 py-1 text-xs"
       >
         {accounts.map((a) => (
           <option key={a.id} value={a.id}>{a.name}</option>
         ))}
       </select>
-      <button
-        onClick={handle}
-        disabled={loading || !accountId}
-        className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-      >
+      <Button onClick={handle} disabled={loading || !accountId} size="xs">
         {loading ? "…" : "Confirmar"}
-      </button>
-      <button
-        onClick={() => setOpen(false)}
-        className="text-xs text-muted-foreground hover:text-foreground"
-      >
+      </Button>
+      <Button onClick={() => setOpen(false)} variant="ghost" size="xs">
         Cancelar
-      </button>
+      </Button>
       {error && <span className="text-xs text-destructive">{error}</span>}
     </div>
   );
