@@ -68,7 +68,7 @@ export function AddClientModal({ open, onClose, onCreated, createClient }: Props
             <div className="space-y-1 col-span-2">
               <Label htmlFor="ac-name">Nombre completo *</Label>
               <Input id="ac-name" {...register("name")} placeholder="Nombre y apellido" />
-              {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
           </div>
 
@@ -80,7 +80,7 @@ export function AddClientModal({ open, onClose, onCreated, createClient }: Props
             <div className="space-y-1">
               <Label htmlFor="ac-email">Correo electrónico</Label>
               <Input id="ac-email" type="email" {...register("email")} placeholder="correo@ejemplo.com" />
-              {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
           </div>
 
@@ -101,7 +101,7 @@ export function AddClientModal({ open, onClose, onCreated, createClient }: Props
             <Textarea id="ac-notes" {...register("notes")} rows={3} placeholder="Información adicional del cliente…" />
           </div>
 
-          {serverError && <p className="text-sm text-red-600 font-medium">{serverError}</p>}
+          {serverError && <p className="text-sm text-destructive font-medium">{serverError}</p>}
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={handleClose}>

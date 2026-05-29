@@ -1,13 +1,14 @@
 import { listAccounts } from "@/lib/finanzas/finanzasService";
 import { MovementForm } from "@/components/finanzas/MovementForm";
 import { createMovementAction } from "../../actions";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function NuevoMovimientoPage() {
   const accounts = await listAccounts();
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Nuevo movimiento</h1>
+      <PageHeader title="Nuevo movimiento" />
       {accounts.length === 0 ? (
         <p className="text-muted-foreground">Primero creá al menos una cuenta.</p>
       ) : (

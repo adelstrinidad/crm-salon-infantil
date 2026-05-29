@@ -62,7 +62,7 @@ export function PagarProveedorButton({ eventServiceId, amount, description, acco
       >
         Cancelar
       </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-destructive">{error}</span>}
     </div>
   );
 }

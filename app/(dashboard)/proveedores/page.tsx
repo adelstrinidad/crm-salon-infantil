@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listProveedores } from "@/lib/proveedores/proveedorService";
 import { buttonVariants } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
 import { DeleteProveedorButton } from "./DeleteProveedorButton";
 
@@ -9,48 +10,52 @@ export default async function ProveedoresPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Proveedores</h1>
-        <Link href="/proveedores/nuevo" className={cn(buttonVariants())}>
-          + Nuevo proveedor
-        </Link>
-      </div>
+      <PageHeader
+        title="Proveedores"
+        action={
+          <Link href="/proveedores/nuevo" className={cn(buttonVariants())}>
+            + Nuevo proveedor
+          </Link>
+        }
+      />
 
       {proveedores.length === 0 ? (
         <p className="text-muted-foreground">No hay proveedores todavía.</p>
       ) : (
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-2 pr-4">Nombre</th>
-              <th className="py-2 pr-4">Descripción</th>
-              <th className="py-2 pr-4">Teléfono</th>
-              <th className="py-2 pr-4">Email</th>
-              <th className="py-2">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {proveedores.map((p) => (
-              <tr key={p.id} className="border-b hover:bg-muted/40">
-                <td className="py-2 pr-4 font-medium">{p.name}</td>
-                <td className="py-2 pr-4 text-muted-foreground">{p.description ?? "—"}</td>
-                <td className="py-2 pr-4 text-muted-foreground">{p.phone ?? "—"}</td>
-                <td className="py-2 pr-4 text-muted-foreground">{p.email ?? "—"}</td>
-                <td className="py-2">
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/proveedores/${p.id}/editar`}
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                    >
-                      Editar
-                    </Link>
-                    <DeleteProveedorButton id={p.id} />
-                  </div>
-                </td>
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
+              <tr>
+                <th className="px-4 py-3 text-left">Nombre</th>
+                <th className="px-4 py-3 text-left">Descripción</th>
+                <th className="px-4 py-3 text-left">Teléfono</th>
+                <th className="px-4 py-3 text-left">Email</th>
+                <th className="px-4 py-3 text-left">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {proveedores.map((p) => (
+                <tr key={p.id} className="hover:bg-muted/40 transition-colors">
+                  <td className="px-4 py-3 font-medium">{p.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.description ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.phone ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.email ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/proveedores/${p.id}/editar`}
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                      >
+                        Editar
+                      </Link>
+                      <DeleteProveedorButton id={p.id} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { getProvider } from "@/lib/providers/providerService";
 import { ProviderForm } from "@/components/prestadores/ProviderForm";
 import { updateProviderAction } from "../../actions";
 import type { ProviderFormInput } from "@/lib/providers/schema";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,7 +25,7 @@ export default async function EditarPrestadorPage({ params }: Props) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Editar prestador</h1>
+      <PageHeader title="Editar prestador" />
       <ProviderForm onSubmit={handleSubmit} defaultValues={defaultValues} submitLabel="Guardar cambios" />
     </div>
   );

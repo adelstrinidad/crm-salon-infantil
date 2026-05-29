@@ -42,7 +42,7 @@ export function LoginForm() {
         />
       </div>
       {state?.error && (
-        <p className="text-sm text-red-600 font-medium">{state.error}</p>
+        <p className="text-sm text-destructive font-medium">{state.error}</p>
       )}
       <button
         type="submit"

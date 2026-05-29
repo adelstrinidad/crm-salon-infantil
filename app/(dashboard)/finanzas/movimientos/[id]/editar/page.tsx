@@ -3,6 +3,7 @@ import { getMovement, listAccounts } from "@/lib/finanzas/finanzasService";
 import { MovementForm } from "@/components/finanzas/MovementForm";
 import { updateMovementAction } from "../../../actions";
 import type { MovementFormInput } from "@/lib/finanzas/schema";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -37,7 +38,7 @@ export default async function EditarMovimientoPage({ params }: Props) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Editar movimiento</h1>
+      <PageHeader title="Editar movimiento" />
       <MovementForm
         onSubmit={handleSubmit}
         accounts={accounts}

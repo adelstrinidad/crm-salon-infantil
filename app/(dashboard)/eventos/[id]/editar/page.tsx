@@ -10,6 +10,9 @@ import { EventProviderPicker } from "@/components/eventos/EventProviderPicker";
 import { EventBonificadoPicker } from "@/components/eventos/EventBonificadoPicker";
 import { updateEventAction } from "../../actions";
 import type { EventFormInput, EventState } from "@/lib/events/schema";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionTitle } from "@/components/ui/section-title";
+import { Money } from "@/components/ui/money";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -59,7 +62,7 @@ export default async function EditarEventoPage({ params }: Props) {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold mb-6">Editar evento</h1>
+        <PageHeader title="Editar evento" />
         <EventForm
           onSubmit={handleSubmit}
           defaultValues={defaultValues}
@@ -84,7 +87,7 @@ export default async function EditarEventoPage({ params }: Props) {
       <hr />
 
       <div className="space-y-2 text-sm">
-        <h2 className="text-lg font-semibold">Resumen financiero</h2>
+        <SectionTitle>Resumen financiero</SectionTitle>
         <div className="grid grid-cols-2 gap-1 max-w-xs">
           <span className="text-muted-foreground">Precio servicios</span>
           <span>${servicePrice.toFixed(2)}</span>
@@ -93,15 +96,15 @@ export default async function EditarEventoPage({ params }: Props) {
           <span className="text-muted-foreground">Costo prestadores</span>
           <span>${providerCost.toFixed(2)}</span>
           <span className="text-muted-foreground">Total bonificado</span>
-          <span className="text-orange-600">-${totalBonificado.toFixed(2)}</span>
+          <span className="text-accent">-${totalBonificado.toFixed(2)}</span>
           <span className="text-muted-foreground font-medium">Subtotal</span>
           <span className="font-medium">${subtotal.toFixed(2)}</span>
           <span className="text-muted-foreground font-medium">Costo total</span>
           <span className="font-medium">${totalCost.toFixed(2)}</span>
           <span className="text-muted-foreground font-medium">Ganancia estimada</span>
-          <span className={`font-medium ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+          <Money value={profit} signed className="font-medium">
             ${profit.toFixed(2)}
-          </span>
+          </Money>
         </div>
       </div>
     </div>

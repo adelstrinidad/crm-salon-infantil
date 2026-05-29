@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { addServiceAction, removeServiceAction } from "@/app/(dashboard)/eventos/[id]/services-actions";
+import { SectionTitle } from "@/components/ui/section-title";
 
 type ServiceLine = {
   serviceId: string;
@@ -46,10 +47,10 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Servicios del evento</h2>
+      <SectionTitle>Servicios del evento</SectionTitle>
 
       {lines.length > 0 ? (
-        <table className="w-full text-sm border-collapse mb-2">
+        <table className="w-full text-sm mb-2 border border-border">
           <thead>
             <tr className="border-b text-left">
               <th className="py-1 pr-4">Servicio</th>
@@ -70,7 +71,7 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
                   <button
                     onClick={() => handleRemove(l.serviceId)}
                     disabled={busy}
-                    className="text-red-600 hover:underline text-xs"
+                    className="text-destructive hover:underline text-xs"
                   >
                     Quitar
                   </button>

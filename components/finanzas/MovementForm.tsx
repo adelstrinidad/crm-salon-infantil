@@ -57,7 +57,7 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
               <option key={t} value={t}>{MOVEMENT_TYPE_LABELS[t]}</option>
             ))}
           </select>
-          {errors.type && <p className="text-sm text-red-600">{errors.type.message}</p>}
+          {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
         </div>
         <div className="space-y-1">
           <Label htmlFor="amount">Monto</Label>
@@ -72,7 +72,7 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
             <option value="">Seleccionar…</option>
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
-          {errors.accountId && <p className="text-sm text-red-600">{errors.accountId.message}</p>}
+          {errors.accountId && <p className="text-sm text-destructive">{errors.accountId.message}</p>}
         </div>
         {isTransfer && (
           <div className="space-y-1">
@@ -89,7 +89,7 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
         <div className="space-y-1">
           <Label htmlFor="date">Fecha</Label>
           <Input id="date" type="date" {...register("date")} />
-          {errors.date && <p className="text-sm text-red-600">{errors.date.message}</p>}
+          {errors.date && <p className="text-sm text-destructive">{errors.date.message}</p>}
         </div>
         <div className="space-y-1">
           <Label htmlFor="description">Descripción</Label>
@@ -97,7 +97,7 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
         </div>
       </div>
 
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
       <div className="flex gap-3">
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Guardando…" : submitLabel}</Button>
         <Link href={cancelHref} className={cn(buttonVariants({ variant: "outline" }))}>Cancelar</Link>

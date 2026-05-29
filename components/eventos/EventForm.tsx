@@ -29,15 +29,8 @@ import {
 import { cn } from "@/lib/utils";
 import { AddClientModal } from "@/components/clientes/AddClientModal";
 import { ClientCombobox } from "@/components/clientes/ClientCombobox";
-
-const STATE_LABELS: Record<EventState, string> = {
-  PRESUPUESTADO: "Presupuestado",
-  RESERVADO: "Reservado",
-  SENADO: "Señado",
-  PAGADO: "Pagado",
-  CERRADO: "Cerrado",
-  SUSPENDIDO: "Suspendido",
-};
+import { statusBadgeLabel } from "@/components/ui/status-badge";
+import { Money } from "@/components/ui/money";
 
 type ServiceLine = { serviceId: string; qty: number };
 type EventLines = { services: ServiceLine[]; providerIds: string[] };
@@ -176,7 +169,7 @@ export function EventForm({
       <div className="space-y-1">
         <Label htmlFor="name">Nombre del evento</Label>
         <Input id="name" {...register("name")} placeholder="Cumpleaños de Sofía" />
-        {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -192,7 +185,7 @@ export function EventForm({
           ) : (
             <Input id="eventType" {...register("eventType")} placeholder="Cumpleaños" />
           )}
-          {errors.eventType && <p className="text-sm text-red-600">{errors.eventType.message}</p>}
+          {errors.eventType && <p className="text-sm text-destructive">{errors.eventType.message}</p>}
         </div>
 
         <div className="space-y-1">
@@ -202,7 +195,7 @@ export function EventForm({
               <button
                 type="button"
                 onClick={() => setShowAddClient(true)}
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-primary hover:underline"
               >
                 + Agregar cliente
               </button>
@@ -229,7 +222,7 @@ export function EventForm({
           />
           <input type="hidden" {...register("clientName")} />
           {errors.clientName && (
-            <p className="text-sm text-red-600">Seleccioná un cliente o creá uno nuevo</p>
+            <p className="text-sm text-destructive">Seleccioná un cliente o creá uno nuevo</p>
           )}
         </div>
       </div>
@@ -238,12 +231,12 @@ export function EventForm({
         <div className="space-y-1">
           <Label htmlFor="startAt">Inicio</Label>
           <Input id="startAt" type="datetime-local" {...register("startAt")} />
-          {errors.startAt && <p className="text-sm text-red-600">{errors.startAt.message}</p>}
+          {errors.startAt && <p className="text-sm text-destructive">{errors.startAt.message}</p>}
         </div>
         <div className="space-y-1">
           <Label htmlFor="endAt">Fin</Label>
           <Input id="endAt" type="datetime-local" {...register("endAt")} />
-          {errors.endAt && <p className="text-sm text-red-600">{errors.endAt.message}</p>}
+          {errors.endAt && <p className="text-sm text-destructive">{errors.endAt.message}</p>}
         </div>
       </div>
 
@@ -262,7 +255,7 @@ export function EventForm({
               <SelectContent>
                 {Object.values(EventState).map((s) => (
                   <SelectItem key={s} value={s}>
-                    {STATE_LABELS[s]}
+                    {statusBadgeLabel(s)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -271,7 +264,7 @@ export function EventForm({
           <div className="space-y-1">
             <Label htmlFor="totalPrice">Precio total</Label>
             <Input id="totalPrice" type="number" step="0.01" {...register("totalPrice")} />
-            {errors.totalPrice && <p className="text-sm text-red-600">{errors.totalPrice.message}</p>}
+            {errors.totalPrice && <p className="text-sm text-destructive">{errors.totalPrice.message}</p>}
           </div>
         </div>
       )}
@@ -295,7 +288,7 @@ export function EventForm({
               {selectedServices.map((l) => (
                 <li key={l.serviceId} className="flex items-center justify-between text-sm bg-muted rounded px-3 py-1.5">
                   <span>{serviceMap[l.serviceId]?.name} × {l.qty}</span>
-                  <button type="button" onClick={() => removeService(l.serviceId)} className="text-muted-foreground hover:text-red-600 ml-4">✕</button>
+                  <button type="button" onClick={() => removeService(l.serviceId)} className="text-muted-foreground hover:text-destructive ml-4">✕</button>
                 </li>
               ))}
             </ul>
@@ -341,7 +334,7 @@ export function EventForm({
               {selectedProviderIds.map((pid) => (
                 <li key={pid} className="flex items-center justify-between text-sm bg-muted rounded px-3 py-1.5">
                   <span>{providerMap[pid]?.name}{providerMap[pid]?.role ? ` (${providerMap[pid].role})` : ""}</span>
-                  <button type="button" onClick={() => removeProvider(pid)} className="text-muted-foreground hover:text-red-600 ml-4">✕</button>
+                  <button type="button" onClick={() => removeProvider(pid)} className="text-muted-foreground hover:text-destructive ml-4">✕</button>
                 </li>
               ))}
             </ul>
@@ -390,13 +383,13 @@ export function EventForm({
             </div>
             <div className="flex justify-between font-medium border-t pt-2 mt-1">
               <span>Ganancia estimada</span>
-              <span className={profit >= 0 ? "text-green-600" : "text-red-600"}>{fmt(profit)}</span>
+              <Money value={profit} signed>{fmt(profit)}</Money>
             </div>
           </div>
         </div>
       )}
 
-      {serverError && <p className="text-sm text-red-600 font-medium">{serverError}</p>}
+      {serverError && <p className="text-sm text-destructive font-medium">{serverError}</p>}
 
       <div className="flex gap-3">
         {submitVariant === "create" ? (

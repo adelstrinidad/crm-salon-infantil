@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { addProviderAction, removeProviderAction } from "@/app/(dashboard)/eventos/[id]/providers-actions";
+import { SectionTitle } from "@/components/ui/section-title";
 
 type ProviderLine = {
   providerId: string;
@@ -42,10 +43,10 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Prestadores del evento</h2>
+      <SectionTitle>Prestadores del evento</SectionTitle>
 
       {lines.length > 0 ? (
-        <table className="w-full text-sm border-collapse mb-2">
+        <table className="w-full text-sm mb-2 border border-border">
           <thead>
             <tr className="border-b text-left">
               <th className="py-1 pr-4">Nombre</th>
@@ -64,7 +65,7 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
                   <button
                     onClick={() => handleRemove(l.providerId)}
                     disabled={busy}
-                    className="text-red-600 hover:underline text-xs"
+                    className="text-destructive hover:underline text-xs"
                   >
                     Quitar
                   </button>
