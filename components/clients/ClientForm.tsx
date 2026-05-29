@@ -38,7 +38,7 @@ export function ClientForm({ onSubmit, defaultValues, submitLabel }: Props) {
       <div className="space-y-1">
         <Label htmlFor="name">Nombre</Label>
         <Input id="name" {...register("name")} placeholder="María García" />
-        {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
@@ -48,7 +48,7 @@ export function ClientForm({ onSubmit, defaultValues, submitLabel }: Props) {
         <div className="space-y-1">
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" {...register("email")} placeholder="maria@email.com" />
-          {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+          {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
         </div>
       </div>
       <div className="space-y-1">
@@ -63,7 +63,7 @@ export function ClientForm({ onSubmit, defaultValues, submitLabel }: Props) {
         <Label htmlFor="notes">Notas</Label>
         <Textarea id="notes" {...register("notes")} rows={3} placeholder="Observaciones sobre el cliente…" />
       </div>
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
       <div className="flex gap-3">
         <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Guardando…" : submitLabel}</Button>
         <Link href="/clientes" className={cn(buttonVariants({ variant: "outline" }))}>Cancelar</Link>

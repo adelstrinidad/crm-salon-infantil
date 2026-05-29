@@ -11,7 +11,7 @@ export function DeleteMovementButton({ id, redirectTo }: { id: string; redirectT
     if (redirectTo) { router.push(redirectTo); router.refresh(); }
   }
   return (
-    <button onClick={handle} className="text-xs text-red-600 hover:underline">
+    <button onClick={handle} className="text-xs text-destructive hover:underline">
       Eliminar
     </button>
   );

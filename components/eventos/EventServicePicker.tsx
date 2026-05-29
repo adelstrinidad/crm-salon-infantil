@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { addServiceAction, removeServiceAction } from "@/app/(dashboard)/eventos/[id]/services-actions";
+import { SectionTitle } from "@/components/ui/section-title";
+import { formatMoney } from "@/lib/money";
 
 type ServiceLine = {
   serviceId: string;
@@ -46,10 +48,10 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Servicios del evento</h2>
+      <SectionTitle>Servicios del evento</SectionTitle>
 
       {lines.length > 0 ? (
-        <table className="w-full text-sm border-collapse mb-2">
+        <table className="w-full text-sm mb-2 border border-border">
           <thead>
             <tr className="border-b text-left">
               <th className="py-1 pr-4">Servicio</th>
@@ -64,13 +66,13 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
               <tr key={l.serviceId} className="border-b">
                 <td className="py-1 pr-4">{l.service.name}</td>
                 <td className="py-1 pr-4">{l.qty}</td>
-                <td className="py-1 pr-4">${(l.service.cost * l.qty).toFixed(2)}</td>
-                <td className="py-1 pr-4">${(l.service.price * l.qty).toFixed(2)}</td>
+                <td className="py-1 pr-4">{formatMoney(l.service.cost * l.qty)}</td>
+                <td className="py-1 pr-4">{formatMoney(l.service.price * l.qty)}</td>
                 <td className="py-1">
                   <button
                     onClick={() => handleRemove(l.serviceId)}
                     disabled={busy}
-                    className="text-red-600 hover:underline text-xs"
+                    className="text-destructive hover:underline text-xs"
                   >
                     Quitar
                   </button>
@@ -79,14 +81,14 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
             ))}
             <tr className="font-medium">
               <td colSpan={2} className="pt-2">Total</td>
-              <td className="pt-2 pr-4">${totalCost.toFixed(2)}</td>
-              <td className="pt-2 pr-4">${totalPrice.toFixed(2)}</td>
+              <td className="pt-2 pr-4">{formatMoney(totalCost)}</td>
+              <td className="pt-2 pr-4">{formatMoney(totalPrice)}</td>
               <td />
             </tr>
             <tr className="text-sm text-muted-foreground">
               <td colSpan={2} />
               <td colSpan={2} className="pb-1">
-                Ganancia: ${(totalPrice - totalCost).toFixed(2)}
+                Ganancia: {formatMoney(totalPrice - totalCost)}
               </td>
               <td />
             </tr>
@@ -108,7 +110,7 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
               <option value="">Seleccionar…</option>
               {unattached.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} (${s.price.toFixed(2)})
+                  {s.name} ({formatMoney(s.price)})
                 </option>
               ))}
             </select>

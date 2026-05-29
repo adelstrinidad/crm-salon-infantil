@@ -3,6 +3,7 @@ import { getAccount } from "@/lib/finanzas/finanzasService";
 import { AccountForm } from "@/components/finanzas/AccountForm";
 import { updateAccountAction } from "../../../actions";
 import type { AccountFormInput } from "@/lib/finanzas/schema";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -23,7 +24,7 @@ export default async function EditarCuentaPage({ params }: Props) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Editar cuenta</h1>
+      <PageHeader title="Editar cuenta" />
       <AccountForm onSubmit={handleSubmit} defaultValues={defaultValues} submitLabel="Guardar cambios" />
     </div>
   );

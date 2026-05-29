@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { deleteProveedorAction } from "./actions";
 
 export function DeleteProveedorButton({ id }: { id: string }) {
@@ -18,11 +17,8 @@ export function DeleteProveedorButton({ id }: { id: string }) {
   }
 
   return (
-    <button
-      onClick={handleDelete}
-      className={cn(buttonVariants({ variant: "destructive", size: "sm" }))}
-    >
+    <Button onClick={handleDelete} variant="destructive" size="sm">
       Eliminar
-    </button>
+    </Button>
   );
 }

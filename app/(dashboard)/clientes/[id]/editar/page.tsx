@@ -3,6 +3,7 @@ import { getClient } from "@/lib/clients/clientService";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { updateClientAction } from "../../actions";
 import type { ClientFormInput } from "@/lib/clients/schema";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -27,7 +28,7 @@ export default async function EditarClientePage({ params }: Props) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Editar cliente</h1>
+      <PageHeader title="Editar cliente" />
       <ClientForm onSubmit={handleSubmit} defaultValues={defaultValues} submitLabel="Guardar cambios" />
     </div>
   );

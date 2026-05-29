@@ -6,8 +6,11 @@ import { Calendar, dateFnsLocalizer, View, Views } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import Link from "next/link";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
+import { statusBadgeLabel } from "@/components/ui/status-badge";
+import { buttonVariants } from "@/components/ui/button";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -17,32 +20,27 @@ const localizer = dateFnsLocalizer({
   locales: { "es": es },
 });
 
+// Soft palette aligned with StatusBadge soft hues (linen-cream compatible).
+// Inline hex required: react-big-calendar passes styles via eventPropGetter.
 const STATE_COLORS: Record<string, string> = {
-  PRESUPUESTADO: "#fef08a",
-  RESERVADO:     "#bfdbfe",
-  SENADO:        "#fed7aa",
-  PAGADO:        "#bbf7d0",
-  CERRADO:       "#e9d5ff",
-  SUSPENDIDO:    "#fecaca",
+  PRESUPUESTADO: "#ede9fe",
+  RESERVADO:     "#dbeafe",
+  SENADO:        "#fef3c7",
+  PAGADO:        "#d1fae5",
+  CERRADO:       "#e7e5e4",
+  SUSPENDIDO:    "#ffe4e6",
 };
 
 const STATE_TEXT: Record<string, string> = {
-  PRESUPUESTADO: "#92400e",
+  PRESUPUESTADO: "#4c1d95",
   RESERVADO:     "#1e3a8a",
-  SENADO:        "#7c2d12",
-  PAGADO:        "#14532d",
-  CERRADO:       "#4c1d95",
-  SUSPENDIDO:    "#7f1d1d",
+  SENADO:        "#78350f",
+  PAGADO:        "#064e3b",
+  CERRADO:       "#1c1917",
+  SUSPENDIDO:    "#881337",
 };
 
-const STATE_LABELS: Record<string, string> = {
-  PRESUPUESTADO: "Presupuestado",
-  RESERVADO:     "Reservado",
-  SENADO:        "Señado",
-  PAGADO:        "Pagado",
-  CERRADO:       "Cerrado",
-  SUSPENDIDO:    "Suspendido",
-};
+const STATES = ["PRESUPUESTADO", "RESERVADO", "SENADO", "PAGADO", "CERRADO", "SUSPENDIDO"] as const;
 
 const MESSAGES = {
   allDay:     "Todo el día",
@@ -122,7 +120,7 @@ export function CalendarClient({ events, defaultDateMs }: Props) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Calendario</h1>
+        <h1 className="text-2xl font-heading font-medium">Calendario</h1>
         <div className="flex items-center gap-2">
           {/* Mini calendar picker */}
           <Popover open={miniOpen} onOpenChange={setMiniOpen}>
@@ -141,24 +139,21 @@ export function CalendarClient({ events, defaultDateMs }: Props) {
               />
             </PopoverContent>
           </Popover>
-          <a
-            href="/eventos/nuevo"
-            className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
+          <Link href="/eventos/nuevo" className={buttonVariants({ size: "sm" })}>
             + Nuevo evento
-          </a>
+          </Link>
         </div>
       </div>
 
       {/* Legend */}
       <div className="flex flex-wrap gap-2 mb-3">
-        {Object.entries(STATE_LABELS).map(([state, label]) => (
+        {STATES.map((state) => (
           <span
             key={state}
-            className="text-xs px-2 py-0.5 rounded"
+            className="text-xs px-2 py-0.5 rounded-full border border-border/60"
             style={{ backgroundColor: STATE_COLORS[state], color: STATE_TEXT[state] }}
           >
-            {label}
+            {statusBadgeLabel(state)}
           </span>
         ))}
       </div>

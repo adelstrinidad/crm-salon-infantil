@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 const COOKIE_NAME = "session";
 const secret = new TextEncoder().encode(process.env.AUTH_SECRET!);
@@ -36,4 +37,15 @@ export async function getSession(): Promise<{ authenticated: boolean } | null> {
   } catch {
     return null;
   }
+}
+
+// Guard for Server Actions: middleware gates page navigation, but a Server
+// Action POST should also verify the session (defense in depth). Redirects to
+// /login when unauthenticated.
+export async function requireSession(): Promise<{ authenticated: boolean }> {
+  const session = await getSession();
+  if (!session?.authenticated) {
+    redirect("/login");
+  }
+  return session;
 }

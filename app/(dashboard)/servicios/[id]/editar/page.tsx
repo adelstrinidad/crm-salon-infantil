@@ -4,6 +4,8 @@ import { listProveedores } from "@/lib/proveedores/proveedorService";
 import { ServiceForm } from "@/components/servicios/ServiceForm";
 import { updateServiceAction } from "../../actions";
 import type { ServiceFormInput } from "@/lib/services/schema";
+import { centsToPesos } from "@/lib/money";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -18,8 +20,8 @@ export default async function EditarServicioPage({ params }: Props) {
   const defaultValues: ServiceFormInput = {
     name: service.name,
     description: service.description ?? "",
-    cost: String(service.cost),
-    price: String(service.price),
+    cost: String(centsToPesos(service.cost)),
+    price: String(centsToPesos(service.price)),
     proveedorId: service.proveedorId ?? "",
   };
 
@@ -30,7 +32,7 @@ export default async function EditarServicioPage({ params }: Props) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Editar servicio</h1>
+      <PageHeader title="Editar servicio" />
       <ServiceForm onSubmit={handleSubmit} defaultValues={defaultValues} submitLabel="Guardar cambios" proveedores={proveedores} />
     </div>
   );

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { addProviderAction, removeProviderAction } from "@/app/(dashboard)/eventos/[id]/providers-actions";
+import { SectionTitle } from "@/components/ui/section-title";
+import { formatMoney } from "@/lib/money";
 
 type ProviderLine = {
   providerId: string;
@@ -42,10 +44,10 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Prestadores del evento</h2>
+      <SectionTitle>Prestadores del evento</SectionTitle>
 
       {lines.length > 0 ? (
-        <table className="w-full text-sm border-collapse mb-2">
+        <table className="w-full text-sm mb-2 border border-border">
           <thead>
             <tr className="border-b text-left">
               <th className="py-1 pr-4">Nombre</th>
@@ -59,12 +61,12 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
               <tr key={l.providerId} className="border-b">
                 <td className="py-1 pr-4">{l.provider.name}</td>
                 <td className="py-1 pr-4 text-muted-foreground">{l.provider.role ?? "—"}</td>
-                <td className="py-1 pr-4">${l.provider.cost.toFixed(2)}</td>
+                <td className="py-1 pr-4">{formatMoney(l.provider.cost)}</td>
                 <td className="py-1">
                   <button
                     onClick={() => handleRemove(l.providerId)}
                     disabled={busy}
-                    className="text-red-600 hover:underline text-xs"
+                    className="text-destructive hover:underline text-xs"
                   >
                     Quitar
                   </button>
@@ -73,7 +75,7 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
             ))}
             <tr className="font-medium">
               <td colSpan={2} className="pt-2">Total prestadores</td>
-              <td className="pt-2">${totalCost.toFixed(2)}</td>
+              <td className="pt-2">{formatMoney(totalCost)}</td>
               <td />
             </tr>
           </tbody>

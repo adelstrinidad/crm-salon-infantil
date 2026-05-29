@@ -3,33 +3,18 @@ import Link from "next/link";
 import { getEventWithAll } from "@/lib/events/eventProviderLines";
 import { getMovementsByEvent, listAccounts } from "@/lib/finanzas/finanzasService";
 import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Money, moneyToneClass, signTone } from "@/components/ui/money";
+import { computeEventFinancials } from "@/lib/events/financials";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import type { EventState } from "@/lib/events/schema";
 import { RegistrarCobroPanel } from "./RegistrarCobroPanel";
 
 type Props = { params: Promise<{ id: string }> };
 
-const STATE_LABELS: Record<EventState, string> = {
-  PRESUPUESTADO: "Presupuestado",
-  RESERVADO: "Reservado",
-  SENADO: "Señado",
-  PAGADO: "Pagado",
-  CERRADO: "Cerrado",
-  SUSPENDIDO: "Suspendido",
-};
-
-const STATE_COLORS: Record<EventState, string> = {
-  PRESUPUESTADO: "bg-yellow-100 text-yellow-800",
-  RESERVADO: "bg-blue-100 text-blue-800",
-  SENADO: "bg-purple-100 text-purple-800",
-  PAGADO: "bg-green-100 text-green-800",
-  CERRADO: "bg-gray-100 text-gray-800",
-  SUSPENDIDO: "bg-red-100 text-red-800",
-};
-
-function fmt(n: number) {
-  return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
-}
+const fmt = formatMoney;
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeStyle: "short" }).format(new Date(d));
@@ -45,38 +30,39 @@ export default async function EventoDetailPage({ params }: Props) {
   ]);
   if (!event) return notFound();
 
-  const serviceCost = event.services.reduce((s, l) => s + l.service.cost * l.qty, 0);
-  const servicePrice = event.services.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const providerCost = event.providers.reduce((s, l) => s + l.provider.cost, 0);
-  const totalBonificado = event.bonificados.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const totalCost = serviceCost + providerCost;
-  const subtotal = servicePrice - totalBonificado;
-  const profit = subtotal - totalCost;
+  const { serviceCost, providerCost, totalBonificado, totalCost, profit } =
+    computeEventFinancials(event);
 
   const cobrado = movements
     .filter((m) => m.type === "INGRESO")
     .reduce((s, m) => s + m.amount, 0);
   const saldo = event.totalPrice - cobrado;
 
-  let cobradoAcumulado = 0;
+  // Running "Acumulado" per row, precomputed before render (no mutation inside JSX).
+  // Null for non-INGRESO rows, which display "—".
+  const cobradoAcumulados: (number | null)[] = [];
+  let acumulado = 0;
+  for (const m of movements) {
+    if (m.type === "INGRESO") acumulado += m.amount;
+    cobradoAcumulados.push(m.type === "INGRESO" ? acumulado : null);
+  }
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground mb-1">
             <Link href="/eventos" className="hover:underline">Eventos</Link>
             {" / "}
             {event.name}
           </p>
-          <h1 className="text-2xl font-bold">{event.name}</h1>
-          <span className={cn(
-            "inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium",
-            STATE_COLORS[event.state as EventState]
-          )}>
-            {STATE_LABELS[event.state as EventState]}
-          </span>
+          <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground">
+            {event.name}
+          </h1>
+          <div className="mt-2">
+            <StatusBadge state={event.state} />
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -99,8 +85,8 @@ export default async function EventoDetailPage({ params }: Props) {
       {/* Info + Financial summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Información básica */}
-        <div className="border rounded-lg p-4 space-y-2 text-sm">
-          <h2 className="font-semibold text-base mb-3">Información básica</h2>
+        <Card className="p-5 space-y-2 text-sm">
+          <SectionTitle className="text-base mb-3">Información básica</SectionTitle>
           <div className="space-y-1.5">
             <div>
               <span className="font-medium">Cliente: </span>
@@ -112,12 +98,7 @@ export default async function EventoDetailPage({ params }: Props) {
             </div>
             <div>
               <span className="font-medium">Estado: </span>
-              <span className={cn(
-                "text-xs px-2 py-0.5 rounded-full font-medium",
-                STATE_COLORS[event.state as EventState]
-              )}>
-                {STATE_LABELS[event.state as EventState]}
-              </span>
+              <StatusBadge state={event.state} />
             </div>
             <div>
               <span className="font-medium">Inicio: </span>
@@ -140,30 +121,34 @@ export default async function EventoDetailPage({ params }: Props) {
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Contabilidad */}
-        <div className="border rounded-lg p-4 text-sm">
-          <h2 className="font-semibold text-base mb-3">Contabilidad</h2>
-          <table className="w-full border-collapse mb-4">
+        <Card className="p-5 text-sm">
+          <SectionTitle className="text-base mb-3">Contabilidad</SectionTitle>
+          <table className="w-full mb-4 border border-border">
             <tbody>
-              <tr className="border-b">
+              <tr className="border-b border-border/60">
                 <td className="py-1.5 text-muted-foreground">Precio total</td>
                 <td className="py-1.5 text-right font-medium">{fmt(event.totalPrice)}</td>
               </tr>
-              <tr className="border-b">
+              <tr className="border-b border-border/60">
                 <td className="py-1.5 text-muted-foreground">Cobrado</td>
-                <td className="py-1.5 text-right font-medium text-green-600">{fmt(cobrado)}</td>
+                <td className="py-1.5 text-right">
+                  <Money tone="success" className="font-medium">{fmt(cobrado)}</Money>
+                </td>
               </tr>
-              <tr className="border-b">
+              <tr className="border-b border-border/60">
                 <td className="py-1.5 text-muted-foreground">Saldo</td>
-                <td className={cn("py-1.5 text-right font-medium", saldo > 0 ? "text-red-600" : "text-green-600")}>
-                  {fmt(saldo)}
+                <td className="py-1.5 text-right">
+                  <Money tone={saldo > 0 ? "loss" : "success"} className="font-medium">
+                    {fmt(saldo)}
+                  </Money>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div className="space-y-1 pt-2 border-t">
+          <div className="space-y-1 pt-2 border-t border-border/60">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Costo servicios</span>
               <span>{fmt(serviceCost)}</span>
@@ -174,112 +159,114 @@ export default async function EventoDetailPage({ params }: Props) {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total bonificado</span>
-              <span className="text-orange-600">-{fmt(totalBonificado)}</span>
+              <span className="text-accent">-{fmt(totalBonificado)}</span>
             </div>
-            <div className="flex justify-between border-t pt-1">
+            <div className="flex justify-between border-t border-border/60 pt-1">
               <span className="font-medium">Costo total</span>
               <span className="font-medium">{fmt(totalCost)}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">Ganancia estimada</span>
-              <span className={cn("font-medium", profit >= 0 ? "text-green-600" : "text-red-600")}>
+              <Money value={profit} signed className="font-medium">
                 {fmt(profit)}
-              </span>
+              </Money>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Servicios */}
-      <div className="border rounded-lg p-4">
-        <h2 className="font-semibold text-base mb-3">Servicios</h2>
+      <Card className="p-5">
+        <SectionTitle className="text-base mb-3">Servicios</SectionTitle>
         {event.services.length === 0 ? (
           <p className="text-sm text-muted-foreground">Sin servicios asignados.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="border-b text-left bg-muted/40">
-                  <th className="py-2 px-3">Nombre</th>
-                  <th className="py-2 px-3">Proveedor</th>
-                  <th className="py-2 px-3 text-center">Cant.</th>
-                  <th className="py-2 px-3 text-right">Costo/u</th>
-                  <th className="py-2 px-3 text-right">Precio/u</th>
-                  <th className="py-2 px-3 text-right">Total</th>
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
+                <tr>
+                  <th className="px-3 py-2 text-left">Nombre</th>
+                  <th className="px-3 py-2 text-left">Proveedor</th>
+                  <th className="px-3 py-2 text-center">Cant.</th>
+                  <th className="px-3 py-2 text-right">Costo/u</th>
+                  <th className="px-3 py-2 text-right">Precio/u</th>
+                  <th className="px-3 py-2 text-right">Total</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/60">
                 {event.services.map((l) => (
-                  <tr key={l.id} className="border-b hover:bg-muted/40">
-                    <td className="py-2 px-3 font-medium">{l.service.name}</td>
-                    <td className="py-2 px-3 text-muted-foreground">{l.service.proveedor?.name ?? "—"}</td>
-                    <td className="py-2 px-3 text-center">{l.qty}</td>
-                    <td className="py-2 px-3 text-right">{fmt(l.service.cost)}</td>
-                    <td className="py-2 px-3 text-right">{fmt(l.service.price)}</td>
-                    <td className="py-2 px-3 text-right font-medium">{fmt(l.service.price * l.qty)}</td>
+                  <tr key={l.id} className="hover:bg-muted/40 transition-colors">
+                    <td className="px-3 py-2 font-medium">{l.service.name}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{l.service.proveedor?.name ?? "—"}</td>
+                    <td className="px-3 py-2 text-center">{l.qty}</td>
+                    <td className="px-3 py-2 text-right">{fmt(l.service.cost)}</td>
+                    <td className="px-3 py-2 text-right">{fmt(l.service.price)}</td>
+                    <td className="px-3 py-2 text-right font-medium">{fmt(l.service.price * l.qty)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Bonificados */}
       {event.bonificados.length > 0 && (
-        <div className="border rounded-lg p-4">
-          <h2 className="font-semibold text-base mb-3">Bonificados</h2>
+        <Card className="p-5">
+          <SectionTitle className="text-base mb-3">Bonificados</SectionTitle>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="border-b text-left bg-muted/40">
-                  <th className="py-2 px-3">Servicio</th>
-                  <th className="py-2 px-3 text-center">Cant.</th>
-                  <th className="py-2 px-3 text-right">Valor bonificado</th>
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
+                <tr>
+                  <th className="px-3 py-2 text-left">Servicio</th>
+                  <th className="px-3 py-2 text-center">Cant.</th>
+                  <th className="px-3 py-2 text-right">Valor bonificado</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/60">
                 {event.bonificados.map((l) => (
-                  <tr key={l.id} className="border-b hover:bg-muted/40">
-                    <td className="py-2 px-3">{l.service.name}</td>
-                    <td className="py-2 px-3 text-center">{l.qty}</td>
-                    <td className="py-2 px-3 text-right text-orange-600">-{fmt(l.service.price * l.qty)}</td>
+                  <tr key={l.id} className="hover:bg-muted/40 transition-colors">
+                    <td className="px-3 py-2">{l.service.name}</td>
+                    <td className="px-3 py-2 text-center">{l.qty}</td>
+                    <td className="px-3 py-2 text-right text-accent">-{fmt(l.service.price * l.qty)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Prestadores */}
-      <div className="border rounded-lg p-4">
-        <h2 className="font-semibold text-base mb-3">Prestadores</h2>
+      <Card className="p-5">
+        <SectionTitle className="text-base mb-3">Prestadores</SectionTitle>
         {event.providers.length === 0 ? (
           <p className="text-sm text-muted-foreground">Sin prestadores asignados.</p>
         ) : (
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b text-left bg-muted/40">
-                <th className="py-2 px-3">Nombre</th>
-                <th className="py-2 px-3">Rol</th>
-                <th className="py-2 px-3 text-right">Costo</th>
-                <th className="py-2 px-3">Pago</th>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
+              <tr>
+                <th className="px-3 py-2 text-left">Nombre</th>
+                <th className="px-3 py-2 text-left">Rol</th>
+                <th className="px-3 py-2 text-right">Costo</th>
+                <th className="px-3 py-2 text-left">Pago</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border/60">
               {event.providers.map((l) => (
-                <tr key={l.id} className="border-b hover:bg-muted/40">
-                  <td className="py-2 px-3 font-medium">{l.provider.name}</td>
-                  <td className="py-2 px-3 text-muted-foreground">{l.provider.role ?? "—"}</td>
-                  <td className="py-2 px-3 text-right">{fmt(l.provider.cost)}</td>
-                  <td className="py-2 px-3">
+                <tr key={l.id} className="hover:bg-muted/40 transition-colors">
+                  <td className="px-3 py-2 font-medium">{l.provider.name}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{l.provider.role ?? "—"}</td>
+                  <td className="px-3 py-2 text-right">{fmt(l.provider.cost)}</td>
+                  <td className="px-3 py-2">
                     {l.paid ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">
+                      <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
                         Pagado {l.paidAt ? new Date(l.paidAt).toLocaleDateString("es-AR") : ""}
                       </span>
                     ) : (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
+                      <span className="inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2.5 py-0.5 text-xs font-medium">
+                        Pendiente
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -287,22 +274,22 @@ export default async function EventoDetailPage({ params }: Props) {
             </tbody>
           </table>
         )}
-      </div>
+      </Card>
 
       {/* Movimientos */}
-      <div className="border rounded-lg p-4">
-        <h2 className="font-semibold text-base mb-3">Movimientos</h2>
+      <Card className="p-5">
+        <SectionTitle className="text-base mb-3">Movimientos</SectionTitle>
 
         {/* Summary cards */}
         <div className="flex flex-wrap gap-4 mb-4">
           {[
-            { label: "Precio total", value: fmt(event.totalPrice) },
-            { label: "Cobrado", value: fmt(cobrado), color: "text-green-600" },
-            { label: "Saldo", value: fmt(saldo), color: saldo > 0 ? "text-red-600" : "text-green-600" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="border rounded px-4 py-2 text-sm min-w-[120px]">
+            { label: "Precio total", value: fmt(event.totalPrice), tone: "default" as const },
+            { label: "Cobrado", value: fmt(cobrado), tone: "success" as const },
+            { label: "Saldo", value: fmt(saldo), tone: saldo > 0 ? ("loss" as const) : ("success" as const) },
+          ].map(({ label, value, tone }) => (
+            <div key={label} className="rounded-lg border border-border bg-card px-4 py-2 text-sm min-w-[120px]">
               <p className="text-muted-foreground text-xs">{label}</p>
-              <p className={cn("font-semibold text-base", color ?? "")}>{value}</p>
+              <p className={cn("font-semibold text-base", moneyToneClass(tone))}>{value}</p>
             </div>
           ))}
         </div>
@@ -311,33 +298,40 @@ export default async function EventoDetailPage({ params }: Props) {
           <p className="text-sm text-muted-foreground">Sin movimientos registrados para este evento.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="border-b text-left bg-muted/40">
-                  <th className="py-2 px-3">Fecha</th>
-                  <th className="py-2 px-3">Descripción</th>
-                  <th className="py-2 px-3">Cuenta</th>
-                  <th className="py-2 px-3">Tipo</th>
-                  <th className="py-2 px-3 text-right">Monto</th>
-                  <th className="py-2 px-3 text-right">Acumulado</th>
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
+                <tr>
+                  <th className="px-3 py-2 text-left">Fecha</th>
+                  <th className="px-3 py-2 text-left">Descripción</th>
+                  <th className="px-3 py-2 text-left">Cuenta</th>
+                  <th className="px-3 py-2 text-left">Tipo</th>
+                  <th className="px-3 py-2 text-right">Monto</th>
+                  <th className="px-3 py-2 text-right">Acumulado</th>
                 </tr>
               </thead>
-              <tbody>
-                {movements.map((m) => {
-                  if (m.type === "INGRESO") cobradoAcumulado += m.amount;
+              <tbody className="divide-y divide-border/60">
+                {movements.map((m, i) => {
+                  const tone = signTone(m.type === "INGRESO" ? 1 : -1);
                   return (
-                    <tr key={m.id} className="border-b hover:bg-muted/40">
-                      <td className="py-2 px-3 whitespace-nowrap">{new Date(m.date).toLocaleDateString("es-AR")}</td>
-                      <td className="py-2 px-3">{m.description ?? "—"}</td>
-                      <td className="py-2 px-3 text-muted-foreground">{m.account.name}</td>
-                      <td className="py-2 px-3">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    <tr key={m.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="px-3 py-2 whitespace-nowrap">{new Date(m.date).toLocaleDateString("es-AR")}</td>
+                      <td className="px-3 py-2">{m.description ?? "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{m.account.name}</td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                            tone === "success"
+                              ? "bg-success/10 text-success border-success/20"
+                              : "bg-loss/10 text-loss border-loss/20",
+                          )}
+                        >
                           {m.type}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-right font-medium">{fmt(m.amount)}</td>
-                      <td className="py-2 px-3 text-right text-muted-foreground">
-                        {m.type === "INGRESO" ? fmt(cobradoAcumulado) : "—"}
+                      <td className="px-3 py-2 text-right font-medium">{fmt(m.amount)}</td>
+                      <td className="px-3 py-2 text-right text-muted-foreground">
+                        {cobradoAcumulados[i] !== null ? fmt(cobradoAcumulados[i]!) : "—"}
                       </td>
                     </tr>
                   );
@@ -346,7 +340,7 @@ export default async function EventoDetailPage({ params }: Props) {
             </table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

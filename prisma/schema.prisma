@@ -55,13 +55,17 @@ model Event {
   state       EventState         @default(PRESUPUESTADO)
   details     String?
   notes       String?
-  totalPrice  Float              @default(0)
+  totalPrice  Int                @default(0) // stored in cents (centavos)
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   client      Client?            @relation(fields: [clientId], references: [id])
   services    EventService[]
   providers   EventProvider[]
   bonificados EventBonificado[]
+
+  @@index([startAt])
+  @@index([state])
+  @@index([clientId])
 }
 
 // ─── Proveedor (external vendor linked to a service) ─────────────────────────
@@ -81,14 +85,16 @@ model Service {
   id           String         @id @default(cuid())
   name         String
   description  String?
-  cost         Float          @default(0)  // what the venue pays
-  price        Float          @default(0)  // what the client pays
+  cost         Int            @default(0)  // what the venue pays, in cents
+  price        Int            @default(0)  // what the client pays, in cents
   proveedorId  String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   proveedor    Proveedor?     @relation(fields: [proveedorId], references: [id])
   events       EventService[]
   bonificados  EventBonificado[] @relation("BonificadoService")
+
+  @@index([proveedorId])
 }
 
 // ─── Event ↔ Service join ─────────────────────────────────────────────────────
@@ -103,6 +109,7 @@ model EventService {
   service   Service   @relation(fields: [serviceId], references: [id])
 
   @@unique([eventId, serviceId])
+  @@index([serviceId])
 }
 
 // ─── Bonificados (complimentary / waived services) ───────────────────────────
@@ -115,6 +122,7 @@ model EventBonificado {
   service   Service @relation("BonificadoService", fields: [serviceId], references: [id])
 
   @@unique([eventId, serviceId])
+  @@index([serviceId])
 }
 
 // ─── Prestador (provider / staff) ────────────────────────────────────────────
@@ -122,7 +130,7 @@ model Provider {
   id        String          @id @default(cuid())
   name      String
   role      String?                         // e.g. "DJ", "Fotógrafo", "Animador"
-  cost      Float           @default(0)     // what the venue pays them per event
+  cost      Int             @default(0)     // what the venue pays them per event, in cents
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
   events    EventProvider[]
@@ -139,6 +147,7 @@ model EventProvider {
   provider   Provider  @relation(fields: [providerId], references: [id])
 
   @@unique([eventId, providerId])
+  @@index([providerId])
 }
 
 // ─── Finanzas ─────────────────────────────────────────────────────────────────
@@ -167,7 +176,7 @@ model Movement {
   accountId     String
   toAccountId   String?      // only for TRANSFERENCIA
   type          MovementType
-  amount        Float
+  amount        Int          // stored in cents (centavos)
   description   String?
   date          DateTime     @default(now())
   eventId       String?
@@ -175,4 +184,9 @@ model Movement {
   updatedAt     DateTime     @updatedAt
   account       Account      @relation("AccountMovements", fields: [accountId], references: [id])
   toAccount     Account?     @relation("AccountInbound", fields: [toAccountId], references: [id])
+
+  @@index([date])
+  @@index([eventId])
+  @@index([accountId])
+  @@index([toAccountId])
 }

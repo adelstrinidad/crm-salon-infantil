@@ -1,10 +1,11 @@
 import { ClientForm } from "@/components/clients/ClientForm";
 import { createClientAction } from "../actions";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function NuevoClientePage() {
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Nuevo cliente</h1>
+      <PageHeader title="Nuevo cliente" />
       <ClientForm onSubmit={createClientAction} submitLabel="Crear cliente" />
     </div>
   );

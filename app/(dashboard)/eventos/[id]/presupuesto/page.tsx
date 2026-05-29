@@ -2,23 +2,15 @@ import { notFound } from "next/navigation";
 import { getEventWithAll } from "@/lib/events/eventProviderLines";
 import { getMovementsByEvent } from "@/lib/finanzas/finanzasService";
 import { getClient } from "@/lib/clients/clientService";
+import { computeEventFinancials } from "@/lib/events/financials";
+import { formatMoney } from "@/lib/money";
 import { PrintButton } from "./PrintButton";
-import type { EventState } from "@/lib/events/schema";
+import { Money } from "@/components/ui/money";
+import { statusBadgeLabel } from "@/components/ui/status-badge";
 
 type Props = { params: Promise<{ id: string }> };
 
-const STATE_LABELS: Record<EventState, string> = {
-  PRESUPUESTADO: "Presupuestado",
-  RESERVADO: "Reservado",
-  SENADO: "Señado",
-  PAGADO: "Pagado",
-  CERRADO: "Cerrado",
-  SUSPENDIDO: "Suspendido",
-};
-
-function fmt(n: number) {
-  return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
-}
+const fmt = formatMoney;
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeStyle: "short" }).format(new Date(d));
@@ -35,9 +27,7 @@ export default async function PresupuestoPage({ params }: Props) {
 
   const client = event.clientId ? await getClient(event.clientId).catch(() => null) : null;
 
-  const servicePrice = event.services.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const totalBonificado = event.bonificados.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const subtotal = servicePrice - totalBonificado;
+  const { servicePrice, totalBonificado, subtotal } = computeEventFinancials(event);
   const totalPrice = event.totalPrice > 0 ? event.totalPrice : subtotal;
   const cobrado = movements.filter((m) => m.type === "INGRESO").reduce((s, m) => s + m.amount, 0);
   const saldo = totalPrice - cobrado;
@@ -58,7 +48,7 @@ export default async function PresupuestoPage({ params }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between border-b pb-4">
           <div>
-            <h1 className="text-2xl font-bold">Presupuesto</h1>
+            <h1 className="text-2xl font-heading font-medium">Presupuesto</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Código del evento: <strong>{id.slice(-6).toUpperCase()}</strong>
             </p>
@@ -97,7 +87,7 @@ export default async function PresupuestoPage({ params }: Props) {
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Estado</p>
-              <p>{STATE_LABELS[event.state as EventState]}</p>
+              <p>{statusBadgeLabel(event.state)}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Fecha inicio</p>
@@ -119,25 +109,25 @@ export default async function PresupuestoPage({ params }: Props) {
         {/* Services table */}
         {event.services.length > 0 && (
           <div>
-            <h2 className="font-semibold mb-2">Servicios</h2>
-            <table className="w-full text-sm border-collapse border">
+            <h2 className="font-heading font-medium mb-2">Servicios</h2>
+            <table className="w-full text-sm border border-border">
               <thead>
                 <tr className="bg-muted/40">
-                  <th className="border px-3 py-2 text-left">Nombre</th>
-                  <th className="border px-3 py-2 text-left">Descripción</th>
-                  <th className="border px-3 py-2 text-center">Cant.</th>
-                  <th className="border px-3 py-2 text-right">Precio/u</th>
-                  <th className="border px-3 py-2 text-right">Total</th>
+                  <th className="border border-border px-3 py-2 text-left">Nombre</th>
+                  <th className="border border-border px-3 py-2 text-left">Descripción</th>
+                  <th className="border border-border px-3 py-2 text-center">Cant.</th>
+                  <th className="border border-border px-3 py-2 text-right">Precio/u</th>
+                  <th className="border border-border px-3 py-2 text-right">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {event.services.map((l) => (
                   <tr key={l.id}>
-                    <td className="border px-3 py-2">{l.service.name}</td>
-                    <td className="border px-3 py-2 text-muted-foreground">{l.service.description ?? ""}</td>
-                    <td className="border px-3 py-2 text-center">{l.qty}</td>
-                    <td className="border px-3 py-2 text-right">{fmt(l.service.price)}</td>
-                    <td className="border px-3 py-2 text-right font-medium">{fmt(l.service.price * l.qty)}</td>
+                    <td className="border border-border px-3 py-2">{l.service.name}</td>
+                    <td className="border border-border px-3 py-2 text-muted-foreground">{l.service.description ?? ""}</td>
+                    <td className="border border-border px-3 py-2 text-center">{l.qty}</td>
+                    <td className="border border-border px-3 py-2 text-right">{fmt(l.service.price)}</td>
+                    <td className="border border-border px-3 py-2 text-right font-medium">{fmt(l.service.price * l.qty)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -148,21 +138,23 @@ export default async function PresupuestoPage({ params }: Props) {
         {/* Bonificados */}
         {event.bonificados.length > 0 && (
           <div>
-            <h2 className="font-semibold mb-2">Servicios bonificados</h2>
-            <table className="w-full text-sm border-collapse border">
+            <h2 className="font-heading font-medium mb-2">Servicios bonificados</h2>
+            <table className="w-full text-sm border border-border">
               <thead>
                 <tr className="bg-muted/40">
-                  <th className="border px-3 py-2 text-left">Servicio</th>
-                  <th className="border px-3 py-2 text-center">Cant.</th>
-                  <th className="border px-3 py-2 text-right">Valor bonificado</th>
+                  <th className="border border-border px-3 py-2 text-left">Servicio</th>
+                  <th className="border border-border px-3 py-2 text-center">Cant.</th>
+                  <th className="border border-border px-3 py-2 text-right">Valor bonificado</th>
                 </tr>
               </thead>
               <tbody>
                 {event.bonificados.map((l) => (
                   <tr key={l.id}>
-                    <td className="border px-3 py-2">{l.service.name}</td>
-                    <td className="border px-3 py-2 text-center">{l.qty}</td>
-                    <td className="border px-3 py-2 text-right text-orange-600">-{fmt(l.service.price * l.qty)}</td>
+                    <td className="border border-border px-3 py-2">{l.service.name}</td>
+                    <td className="border border-border px-3 py-2 text-center">{l.qty}</td>
+                    <td className="border border-border px-3 py-2 text-right">
+                      <span className="text-accent">-{fmt(l.service.price * l.qty)}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -172,31 +164,37 @@ export default async function PresupuestoPage({ params }: Props) {
 
         {/* Financial summary */}
         <div className="flex justify-end">
-          <table className="text-sm border-collapse border min-w-[240px]">
+          <table className="text-sm border border-border min-w-[240px]">
             <tbody>
               <tr className="bg-muted/40">
-                <td className="border px-4 py-2 font-medium">Subtotal servicios</td>
-                <td className="border px-4 py-2 text-right">{fmt(servicePrice)}</td>
+                <td className="border border-border px-4 py-2 font-medium">Subtotal servicios</td>
+                <td className="border border-border px-4 py-2 text-right">{fmt(servicePrice)}</td>
               </tr>
               {totalBonificado > 0 && (
                 <tr>
-                  <td className="border px-4 py-2 text-muted-foreground">Bonificaciones</td>
-                  <td className="border px-4 py-2 text-right text-orange-600">-{fmt(totalBonificado)}</td>
+                  <td className="border border-border px-4 py-2 text-muted-foreground">Bonificaciones</td>
+                  <td className="border border-border px-4 py-2 text-right">
+                    <span className="text-accent">-{fmt(totalBonificado)}</span>
+                  </td>
                 </tr>
               )}
               <tr className="font-semibold">
-                <td className="border px-4 py-2">Total</td>
-                <td className="border px-4 py-2 text-right">{fmt(totalPrice)}</td>
+                <td className="border border-border px-4 py-2">Total</td>
+                <td className="border border-border px-4 py-2 text-right">{fmt(totalPrice)}</td>
               </tr>
               {cobrado > 0 && (
                 <tr>
-                  <td className="border px-4 py-2 text-muted-foreground">Abonado</td>
-                  <td className="border px-4 py-2 text-right text-green-600">-{fmt(cobrado)}</td>
+                  <td className="border border-border px-4 py-2 text-muted-foreground">Abonado</td>
+                  <td className="border border-border px-4 py-2 text-right">
+                    <Money tone="success">-{fmt(cobrado)}</Money>
+                  </td>
                 </tr>
               )}
-              <tr className={`font-semibold ${saldo > 0 ? "text-red-600" : "text-green-600"}`}>
-                <td className="border px-4 py-2">Saldo</td>
-                <td className="border px-4 py-2 text-right">{fmt(saldo)}</td>
+              <tr className="font-semibold">
+                <td className="border border-border px-4 py-2">Saldo</td>
+                <td className="border border-border px-4 py-2 text-right">
+                  <Money tone={saldo > 0 ? "loss" : "success"}>{fmt(saldo)}</Money>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -211,7 +209,7 @@ export default async function PresupuestoPage({ params }: Props) {
         {/* Header repeated */}
         <div className="flex items-start justify-between border-b pb-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Presupuesto</h1>
+            <h1 className="text-2xl font-heading font-medium">Presupuesto</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Código del evento: <strong>{id.slice(-6).toUpperCase()}</strong>
             </p>
@@ -221,7 +219,7 @@ export default async function PresupuestoPage({ params }: Props) {
           </div>
         </div>
 
-        <h2 className="font-semibold text-base mb-4">Términos y condiciones</h2>
+        <h2 className="font-heading font-medium text-base mb-4">Términos y condiciones</h2>
         <ul className="space-y-3 text-sm">
           <li>
             <span className="font-medium">Validez del presupuesto: </span>
@@ -248,10 +246,10 @@ export default async function PresupuestoPage({ params }: Props) {
         {/* Signature area */}
         <div className="grid grid-cols-2 gap-12 mt-12 text-sm text-center">
           <div>
-            <div className="border-t border-gray-400 pt-2">Firma del cliente</div>
+            <div className="border-t border-foreground/40 pt-2">Firma del cliente</div>
           </div>
           <div>
-            <div className="border-t border-gray-400 pt-2">Firma del salón</div>
+            <div className="border-t border-foreground/40 pt-2">Firma del salón</div>
           </div>
         </div>
       </div>

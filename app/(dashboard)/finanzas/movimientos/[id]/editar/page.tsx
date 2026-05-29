@@ -3,6 +3,8 @@ import { getMovement, listAccounts } from "@/lib/finanzas/finanzasService";
 import { MovementForm } from "@/components/finanzas/MovementForm";
 import { updateMovementAction } from "../../../actions";
 import type { MovementFormInput } from "@/lib/finanzas/schema";
+import { centsToPesos } from "@/lib/money";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -23,7 +25,7 @@ export default async function EditarMovimientoPage({ params }: Props) {
 
   const defaultValues: Partial<MovementFormInput> = {
     type: movement.type as MovementFormInput["type"],
-    amount: String(movement.amount),
+    amount: String(centsToPesos(movement.amount)),
     accountId: movement.accountId,
     toAccountId: movement.toAccountId ?? undefined,
     date: toDateInput(new Date(movement.date)),
@@ -37,7 +39,7 @@ export default async function EditarMovimientoPage({ params }: Props) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Editar movimiento</h1>
+      <PageHeader title="Editar movimiento" />
       <MovementForm
         onSubmit={handleSubmit}
         accounts={accounts}

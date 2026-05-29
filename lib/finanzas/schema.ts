@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parsePesosToCents } from "@/lib/money";
 
 export const MovementType = {
   INGRESO: "INGRESO",
@@ -48,7 +49,7 @@ export type MovementFormInput = z.infer<typeof movementFormInputSchema>;
 
 export const movementSchema = movementFormInputSchema.transform((d) => ({
   ...d,
-  amount: parseFloat(d.amount ?? "0"),
+  amount: parsePesosToCents(d.amount),
   date: new Date(d.date),
   toAccountId: d.toAccountId || undefined,
   eventId: d.eventId || undefined,

@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // AI-Kit tooling (hooks + capture/validation scripts) — CommonJS node
+    // scripts, not part of the Next app source; not linted with app rules.
+    ".ai/**",
+    // Prisma-generated client.
+    "app/generated/**",
   ]),
 ]);
 

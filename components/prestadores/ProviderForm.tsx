@@ -46,7 +46,7 @@ export function ProviderForm({ onSubmit, defaultValues, submitLabel }: ProviderF
       <div className="space-y-1">
         <Label htmlFor="name">Nombre</Label>
         <Input id="name" {...register("name")} placeholder="Juan Pérez" />
-        {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -60,7 +60,7 @@ export function ProviderForm({ onSubmit, defaultValues, submitLabel }: ProviderF
         </div>
       </div>
 
-      {serverError && <p className="text-sm text-red-600 font-medium">{serverError}</p>}
+      {serverError && <p className="text-sm text-destructive font-medium">{serverError}</p>}
 
       <div className="flex gap-3">
         <Button type="submit" disabled={isSubmitting}>

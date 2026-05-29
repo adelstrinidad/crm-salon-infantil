@@ -1,6 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { loginAction } from "@/lib/auth/actions";
 
 const initialState = { error: undefined };
@@ -16,41 +19,25 @@ export function LoginForm() {
   return (
     <form action={action} className="space-y-4">
       <div className="space-y-1">
-        <label htmlFor="email" className="text-sm font-medium">
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-        />
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" required autoComplete="email" />
       </div>
       <div className="space-y-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          Contraseña
-        </label>
-        <input
+        <Label htmlFor="password">Contraseña</Label>
+        <Input
           id="password"
           name="password"
           type="password"
           required
           autoComplete="current-password"
-          className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
       {state?.error && (
-        <p className="text-sm text-red-600 font-medium">{state.error}</p>
+        <p className="text-sm text-destructive font-medium">{state.error}</p>
       )}
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full bg-primary text-primary-foreground rounded-md py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-      >
+      <Button type="submit" disabled={isPending} size="lg" className="w-full">
         {isPending ? "Ingresando…" : "Ingresar"}
-      </button>
+      </Button>
     </form>
   );
 }

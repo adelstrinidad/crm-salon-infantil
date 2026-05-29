@@ -5,6 +5,7 @@ import { listProviders } from "@/lib/providers/providerService";
 import { listEventTypes } from "@/lib/eventTypes/eventTypeService";
 import { listClients } from "@/lib/clients/clientService";
 import { quickCreateClientAction } from "@/app/(dashboard)/clientes/actions";
+import { PageHeader } from "@/components/ui/page-header";
 
 const DEFAULT_DETAILS = `Te paso los Datos para confirmar
 🗓️Fecha del Evento:
@@ -25,7 +26,7 @@ export default async function NuevoEventoPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Nuevo evento</h1>
+      <PageHeader title="Nuevo evento" />
       <EventForm
         onSubmit={createEventAction}
         submitVariant="create"

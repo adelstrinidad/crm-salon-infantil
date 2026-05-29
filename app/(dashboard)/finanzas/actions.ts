@@ -7,10 +7,12 @@ import {
   createAccount, updateAccount, deleteAccount,
   createMovement, updateMovement, deleteMovement,
 } from "@/lib/finanzas/finanzasService";
+import { requireSession } from "@/lib/auth/session";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 
 export async function createAccountAction(input: AccountFormInput): Promise<ActionResult> {
+  await requireSession();
   const parsed = accountFormInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   await createAccount(parsed.data);
@@ -19,6 +21,7 @@ export async function createAccountAction(input: AccountFormInput): Promise<Acti
 }
 
 export async function updateAccountAction(id: string, input: AccountFormInput): Promise<ActionResult> {
+  await requireSession();
   const parsed = accountFormInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   await updateAccount(id, parsed.data);
@@ -27,12 +30,14 @@ export async function updateAccountAction(id: string, input: AccountFormInput): 
 }
 
 export async function deleteAccountAction(id: string): Promise<ActionResult> {
+  await requireSession();
   await deleteAccount(id);
   revalidatePath("/finanzas");
   return { ok: true };
 }
 
 export async function createMovementAction(input: MovementFormInput): Promise<ActionResult> {
+  await requireSession();
   const parsed = movementSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   await createMovement(parsed.data);
@@ -41,6 +46,7 @@ export async function createMovementAction(input: MovementFormInput): Promise<Ac
 }
 
 export async function updateMovementAction(id: string, input: MovementFormInput): Promise<ActionResult> {
+  await requireSession();
   const parsed = movementSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   await updateMovement(id, parsed.data);
@@ -50,6 +56,7 @@ export async function updateMovementAction(id: string, input: MovementFormInput)
 }
 
 export async function deleteMovementAction(id: string): Promise<ActionResult> {
+  await requireSession();
   await deleteMovement(id);
   revalidatePath("/finanzas");
   revalidatePath("/finanzas/movimientos");
