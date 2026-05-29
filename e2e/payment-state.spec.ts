@@ -23,7 +23,9 @@ async function login(page: Page) {
 async function createReservedEvent(page: Page, name: string): Promise<string> {
   await page.goto("/eventos/nuevo");
   await page.getByRole("textbox", { name: "Nombre del evento" }).fill(name);
-  await page.getByLabel("Tipo de evento").selectOption("Cumpleaños");
+  // Tipo de evento is a styled (Radix) Select: open it and pick the option.
+  await page.getByLabel("Tipo de evento").click();
+  await page.getByRole("option", { name: "Cumpleaños" }).click();
 
   // Client picker (combobox) — pick a seeded client.
   await page.getByText("Seleccionar cliente…").click();

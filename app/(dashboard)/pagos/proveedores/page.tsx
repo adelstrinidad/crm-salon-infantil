@@ -7,6 +7,8 @@ import { Money } from "@/components/ui/money";
 import { Button } from "@/components/ui/button";
 import { PagarProveedorButton } from "./PagarProveedorButton";
 import { formatMoney } from "@/lib/money";
+import { SelectFilter } from "@/components/ui/select-filter";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   searchParams: Promise<{ from?: string; to?: string; proveedorId?: string; estado?: string }>;
@@ -46,32 +48,36 @@ export default async function PagosProveedoresPage({ searchParams }: Props) {
       {/* Filters */}
       <Card className="p-4">
         <form method="GET" className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
+          <div className="space-y-1 w-full sm:w-44">
             <label className="text-sm font-medium">Fecha evento desde</label>
-            <input type="date" name="from" defaultValue={from ? localDate(from) : ""} className="border border-border bg-background rounded-md px-2 py-1.5 text-sm" />
+            <Input type="date" name="from" defaultValue={from ? localDate(from) : ""} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 w-full sm:w-40">
             <label className="text-sm font-medium">Hasta</label>
-            <input type="date" name="to" defaultValue={to ? localDate(to) : ""} className="border border-border bg-background rounded-md px-2 py-1.5 text-sm" />
+            <Input type="date" name="to" defaultValue={to ? localDate(to) : ""} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 w-full sm:w-48">
             <label className="text-sm font-medium">Proveedor</label>
-            <select name="proveedorId" defaultValue={params.proveedorId ?? ""} className="border border-border bg-background rounded-md px-2 py-1.5 text-sm">
-              <option value="">Todos</option>
-              {proveedores.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+            <SelectFilter
+              name="proveedorId"
+              defaultValue={params.proveedorId ?? ""}
+              allLabel="Todos"
+              options={proveedores.map((p) => ({ value: p.id, label: p.name }))}
+            />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 w-full sm:w-44">
             <label className="text-sm font-medium">Estado</label>
-            <select name="estado" defaultValue={params.estado ?? ""} className="border border-border bg-background rounded-md px-2 py-1.5 text-sm">
-              <option value="">Todos</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="pagado">Pagado</option>
-            </select>
+            <SelectFilter
+              name="estado"
+              defaultValue={params.estado ?? ""}
+              allLabel="Todos"
+              options={[
+                { value: "pendiente", label: "Pendiente" },
+                { value: "pagado", label: "Pagado" },
+              ]}
+            />
           </div>
-          <Button type="submit" size="sm">Filtrar</Button>
+          <Button type="submit">Filtrar</Button>
         </form>
       </Card>
 

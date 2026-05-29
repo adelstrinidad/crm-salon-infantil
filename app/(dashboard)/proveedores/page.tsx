@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Plus, Truck } from "lucide-react";
 import { listProveedores } from "@/lib/proveedores/proveedorService";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { DeleteProveedorButton } from "./DeleteProveedorButton";
 
@@ -14,13 +16,24 @@ export default async function ProveedoresPage() {
         title="Proveedores"
         action={
           <Link href="/proveedores/nuevo" className={cn(buttonVariants())}>
-            + Nuevo proveedor
+            <Plus className="size-4" />
+            Nuevo proveedor
           </Link>
         }
       />
 
       {proveedores.length === 0 ? (
-        <p className="text-muted-foreground">No hay proveedores todavía.</p>
+        <EmptyState
+          icon={Truck}
+          title="Todavía no hay proveedores"
+          description="Registrá los proveedores externos que abastecen tus servicios."
+          action={
+            <Link href="/proveedores/nuevo" className={cn(buttonVariants())}>
+              <Plus className="size-4" />
+              Nuevo proveedor
+            </Link>
+          }
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">

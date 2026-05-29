@@ -59,7 +59,7 @@ export default async function PresupuestoPage({ params }: Props) {
         </div>
 
         {/* Client + Venue info */}
-        <div className="grid grid-cols-2 gap-6 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
           <div className="space-y-1">
             <p className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-1">Cliente</p>
             <p className="font-medium">{event.clientName}</p>

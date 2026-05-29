@@ -13,6 +13,8 @@ import { Card } from "@/components/ui/card";
 import { StatusBadge, statusBadgeLabel } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Money, moneyToneClass, signTone } from "@/components/ui/money";
+import { SelectFilter } from "@/components/ui/select-filter";
+import { Input } from "@/components/ui/input";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -59,38 +61,24 @@ export default async function ReportesPage({ searchParams }: Props) {
         {/* Filters */}
         <Card className="p-4">
           <form method="GET" className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
+            <div className="space-y-1 w-full sm:w-40">
               <label className="text-sm font-medium">Fecha desde</label>
-              <input
-                type="date"
-                name="from"
-                defaultValue={toInputDate(from)}
-                className="border border-border bg-background rounded-md px-2 py-1.5 text-sm"
-              />
+              <Input type="date" name="from" defaultValue={toInputDate(from)} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 w-full sm:w-40">
               <label className="text-sm font-medium">Fecha hasta</label>
-              <input
-                type="date"
-                name="to"
-                defaultValue={toInputDate(to)}
-                className="border border-border bg-background rounded-md px-2 py-1.5 text-sm"
-              />
+              <Input type="date" name="to" defaultValue={toInputDate(to)} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 w-full sm:w-44">
               <label className="text-sm font-medium">Estado</label>
-              <select
+              <SelectFilter
                 name="state"
                 defaultValue={params.state ?? ""}
-                className="border border-border bg-background rounded-md px-2 py-1.5 text-sm"
-              >
-                <option value="">Todos</option>
-                {Object.values(EventState).map((s) => (
-                  <option key={s} value={s}>{statusBadgeLabel(s)}</option>
-                ))}
-              </select>
+                allLabel="Todos"
+                options={Object.values(EventState).map((s) => ({ value: s, label: statusBadgeLabel(s) }))}
+              />
             </div>
-            <Button type="submit" size="sm">Filtrar</Button>
+            <Button type="submit">Filtrar</Button>
           </form>
         </Card>
       </div>

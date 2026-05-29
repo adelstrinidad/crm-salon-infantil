@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Plus, Sparkles } from "lucide-react";
 import { listServices } from "@/lib/services/serviceService";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
 import { DeleteServiceButton } from "./DeleteServiceButton";
@@ -15,13 +17,24 @@ export default async function ServiciosPage() {
         title="Servicios"
         action={
           <Link href="/servicios/nuevo" className={cn(buttonVariants())}>
-            + Nuevo servicio
+            <Plus className="size-4" />
+            Nuevo servicio
           </Link>
         }
       />
 
       {services.length === 0 ? (
-        <p className="text-muted-foreground">No hay servicios todavía.</p>
+        <EmptyState
+          icon={Sparkles}
+          title="Todavía no hay servicios"
+          description="Cargá los servicios de tu catálogo (salón, torta, animación…) con su costo y precio."
+          action={
+            <Link href="/servicios/nuevo" className={cn(buttonVariants())}>
+              <Plus className="size-4" />
+              Nuevo servicio
+            </Link>
+          }
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">

@@ -9,6 +9,13 @@ import { movementFormInputSchema, MovementType, MOVEMENT_TYPE_LABELS, type Movem
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type Account = { id: string; name: string };
@@ -25,7 +32,7 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
-    register, handleSubmit, watch,
+    register, handleSubmit, watch, setValue,
     formState: { errors, isSubmitting },
   } = useForm<MovementFormInput>({
     resolver: zodResolver(movementFormInputSchema),
@@ -49,14 +56,26 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
 
   return (
     <form onSubmit={submit} className="space-y-6 max-w-md">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="type">Tipo</Label>
-          <select id="type" {...register("type")} className="w-full border rounded px-2 py-1.5 text-sm">
-            {Object.values(MovementType).map((t) => (
-              <option key={t} value={t}>{MOVEMENT_TYPE_LABELS[t]}</option>
-            ))}
-          </select>
+          <div className="w-full">
+            <input type="hidden" {...register("type")} />
+            <Select
+              items={MOVEMENT_TYPE_LABELS}
+              value={watchType ?? ""}
+              onValueChange={(v) => setValue("type", v as MovementFormInput["type"], { shouldValidate: true })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar…" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(MovementType).map((t) => (
+                  <SelectItem key={t} value={t}>{MOVEMENT_TYPE_LABELS[t]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
         </div>
         <div className="space-y-1">
@@ -65,27 +84,49 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="accountId">Cuenta origen</Label>
-          <select id="accountId" {...register("accountId")} className="w-full border rounded px-2 py-1.5 text-sm">
-            <option value="">Seleccionar…</option>
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
+          <div className="w-full">
+            <input type="hidden" {...register("accountId")} />
+            <Select
+              items={Object.fromEntries(accounts.map((a) => [a.id, a.name]))}
+              value={watch("accountId") ?? ""}
+              onValueChange={(v) => setValue("accountId", v as string, { shouldValidate: true })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar…" />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           {errors.accountId && <p className="text-sm text-destructive">{errors.accountId.message}</p>}
         </div>
         {isTransfer && (
           <div className="space-y-1">
             <Label htmlFor="toAccountId">Cuenta destino</Label>
-            <select id="toAccountId" {...register("toAccountId")} className="w-full border rounded px-2 py-1.5 text-sm">
-              <option value="">Seleccionar…</option>
-              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
+            <div className="w-full">
+              <input type="hidden" {...register("toAccountId")} />
+              <Select
+                items={Object.fromEntries(accounts.map((a) => [a.id, a.name]))}
+                value={watch("toAccountId") ?? ""}
+                onValueChange={(v) => setValue("toAccountId", v as string, { shouldValidate: true })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="date">Fecha</Label>
           <Input id="date" type="date" {...register("date")} />
