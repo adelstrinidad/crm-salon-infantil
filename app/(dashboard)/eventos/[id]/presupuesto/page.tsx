@@ -2,15 +2,15 @@ import { notFound } from "next/navigation";
 import { getEventWithAll } from "@/lib/events/eventProviderLines";
 import { getMovementsByEvent } from "@/lib/finanzas/finanzasService";
 import { getClient } from "@/lib/clients/clientService";
+import { computeEventFinancials } from "@/lib/events/financials";
+import { formatMoney } from "@/lib/money";
 import { PrintButton } from "./PrintButton";
 import { Money } from "@/components/ui/money";
 import { statusBadgeLabel } from "@/components/ui/status-badge";
 
 type Props = { params: Promise<{ id: string }> };
 
-function fmt(n: number) {
-  return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
-}
+const fmt = formatMoney;
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeStyle: "short" }).format(new Date(d));
@@ -27,9 +27,7 @@ export default async function PresupuestoPage({ params }: Props) {
 
   const client = event.clientId ? await getClient(event.clientId).catch(() => null) : null;
 
-  const servicePrice = event.services.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const totalBonificado = event.bonificados.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const subtotal = servicePrice - totalBonificado;
+  const { servicePrice, totalBonificado, subtotal } = computeEventFinancials(event);
   const totalPrice = event.totalPrice > 0 ? event.totalPrice : subtotal;
   const cobrado = movements.filter((m) => m.type === "INGRESO").reduce((s, m) => s + m.amount, 0);
   const saldo = totalPrice - cobrado;

@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionTitle } from "@/components/ui/section-title";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 type Props = { params: Promise<{ id: string }> };
@@ -65,7 +66,7 @@ export default async function ClienteDetailPage({ params }: Props) {
                     <td className="px-4 py-2">
                       <StatusBadge state={e.state} />
                     </td>
-                    <td className="px-4 py-2">${e.totalPrice.toLocaleString("es-AR")}</td>
+                    <td className="px-4 py-2">{formatMoney(e.totalPrice)}</td>
                   </tr>
                 ))}
               </tbody>

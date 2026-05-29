@@ -49,11 +49,12 @@ describe("eventSchema (server-side transform)", () => {
     }
   });
 
-  it("transforms string price to number", () => {
+  it("transforms string price (pesos) to integer cents", () => {
     const result = eventSchema.safeParse(validFormInput);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.totalPrice).toBe(15000);
+      // "15000" pesos → 1_500_000 cents
+      expect(result.data.totalPrice).toBe(1_500_000);
     }
   });
 

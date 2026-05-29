@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { MOVEMENT_SIGN } from "@/lib/finanzas/schema";
 import type { EventState } from "@/lib/events/schema";
+import { computeEventFinancials } from "@/lib/events/financials";
 
 type EventFilter = { from: Date; to: Date; state?: EventState };
 
@@ -17,16 +18,6 @@ async function fetchEventsWithLines({ from, to, state }: EventFilter) {
     },
     orderBy: { startAt: "asc" },
   });
-}
-
-function computeEventFinancials(event: Awaited<ReturnType<typeof fetchEventsWithLines>>[number]) {
-  const servicePrice = event.services.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const serviceCost = event.services.reduce((s, l) => s + l.service.cost * l.qty, 0);
-  const providerCost = event.providers.reduce((s, l) => s + l.provider.cost, 0);
-  const totalBonificado = event.bonificados.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const subtotal = servicePrice - totalBonificado;
-  const totalCost = serviceCost + providerCost;
-  return { servicePrice, serviceCost, providerCost, totalBonificado, subtotal, totalCost, profit: subtotal - totalCost };
 }
 
 // Grouped by event type — mirrors Bonete's balance table

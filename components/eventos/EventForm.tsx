@@ -15,6 +15,7 @@ import {
   EventState,
 } from "@/lib/events/schema";
 import type { ClientFormInput } from "@/lib/clients/schema";
+import { formatMoney } from "@/lib/money";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -162,7 +163,7 @@ export function EventForm({
   const providerCost = selectedProviderIds.reduce((s, pid) => s + (providerMap[pid]?.cost ?? 0), 0);
   const profit = servicePrice - serviceCost - providerCost;
 
-  const fmt = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
+  const fmt = formatMoney;
 
   return (
     <form onSubmit={buildSubmit()} className="space-y-6 max-w-2xl">

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Money } from "@/components/ui/money";
 import { Button } from "@/components/ui/button";
 import { PagarProveedorButton } from "./PagarProveedorButton";
+import { formatMoney } from "@/lib/money";
 
 type Props = {
   searchParams: Promise<{ from?: string; to?: string; proveedorId?: string; estado?: string }>;
@@ -18,9 +19,7 @@ function localDate(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-function fmt(n: number) {
-  return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
-}
+const fmt = formatMoney;
 
 export default async function PagosProveedoresPage({ searchParams }: Props) {
   const params = await searchParams;

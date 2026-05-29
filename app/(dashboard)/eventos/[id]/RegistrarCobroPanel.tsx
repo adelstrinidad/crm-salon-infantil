@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SectionTitle } from "@/components/ui/section-title";
 import { Money } from "@/components/ui/money";
+import { formatMoney, centsToPesos, parsePesosToCents } from "@/lib/money";
 
 type Account = { id: string; name: string };
 
@@ -21,15 +22,14 @@ function today() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function fmt(n: number) {
-  return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
-}
+const fmt = formatMoney;
 
 export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
   const [open, setOpen] = useState(false);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState(saldo > 0 ? String(saldo) : "");
+  // `saldo` is in cents; the input shows pesos.
+  const [amount, setAmount] = useState(saldo > 0 ? String(centsToPesos(saldo)) : "");
   const [date, setDate] = useState(today());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
     setError(null);
     const result = await registrarCobroAction(eventId, {
       accountId,
-      amount: parseFloat(amount),
+      amount: parsePesosToCents(amount),
       description,
       date,
     });

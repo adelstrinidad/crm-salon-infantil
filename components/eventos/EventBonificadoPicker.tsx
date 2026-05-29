@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { addBonificadoAction, removeBonificadoAction } from "@/app/(dashboard)/eventos/[id]/bonificados-actions";
 import { SectionTitle } from "@/components/ui/section-title";
+import { formatMoney } from "@/lib/money";
 
 type BonificadoLine = {
   serviceId: string;
@@ -63,7 +64,7 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
               <tr key={l.serviceId} className="border-b">
                 <td className="py-1 pr-4">{l.service.name}</td>
                 <td className="py-1 pr-4">{l.qty}</td>
-                <td className="py-1 pr-4 text-accent">${(l.service.price * l.qty).toFixed(2)}</td>
+                <td className="py-1 pr-4 text-accent">{formatMoney(l.service.price * l.qty)}</td>
                 <td className="py-1">
                   <button
                     onClick={() => handleRemove(l.serviceId)}
@@ -77,7 +78,7 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
             ))}
             <tr className="font-medium">
               <td colSpan={2} className="pt-2">Total bonificado</td>
-              <td className="pt-2 text-accent">${totalBonificado.toFixed(2)}</td>
+              <td className="pt-2 text-accent">{formatMoney(totalBonificado)}</td>
               <td />
             </tr>
           </tbody>
@@ -98,7 +99,7 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
               <option value="">Seleccionar…</option>
               {unattached.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} (${s.price.toFixed(2)})
+                  {s.name} ({formatMoney(s.price)})
                 </option>
               ))}
             </select>

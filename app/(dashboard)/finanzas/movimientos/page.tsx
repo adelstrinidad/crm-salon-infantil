@@ -5,10 +5,13 @@ import { buttonVariants, Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Money, signTone } from "@/components/ui/money";
+import { Pager } from "@/components/ui/pager";
+import { parsePage, buildPaginated } from "@/lib/pagination";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { DeleteMovementButton } from "../DeleteMovementButton";
 
-type Props = { searchParams: Promise<{ from?: string; to?: string; accountId?: string; type?: string }> };
+type Props = { searchParams: Promise<{ from?: string; to?: string; accountId?: string; type?: string; page?: string }> };
 
 function localDate(d: Date) {
   const y = d.getFullYear();
@@ -27,28 +30,24 @@ export default async function MovimientosPage({ searchParams }: Props) {
   const from = params.from ? new Date(params.from + "T00:00:00") : defaultFrom;
   const to = params.to ? new Date(params.to + "T23:59:59") : defaultTo;
 
-  const [movements, accounts] = await Promise.all([
+  const pageParams = parsePage(params.page);
+
+  const [movementsResult, accounts] = await Promise.all([
     listMovementsFiltered({
       from,
       to,
       accountId: params.accountId || undefined,
       type: params.type || undefined,
+      skip: pageParams.skip,
+      take: pageParams.take,
     }),
     listAccounts(),
   ]);
 
-  const totalIngreso = movements.reduce((s, m) => {
-    const sign = MOVEMENT_SIGN[m.type as keyof typeof MOVEMENT_SIGN];
-    return sign > 0 ? s + m.amount : s;
-  }, 0);
-  const totalEgreso = movements.reduce((s, m) => {
-    const sign = MOVEMENT_SIGN[m.type as keyof typeof MOVEMENT_SIGN];
-    return sign < 0 ? s + m.amount : s;
-  }, 0);
+  const { rows: movements, total, totalIngreso, totalEgreso } = movementsResult;
+  const { page, pageCount } = buildPaginated(movements, total, pageParams);
 
-  function fmt(n: number) {
-    return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
-  }
+  const fmt = formatMoney;
 
   return (
     <div className="space-y-6">
@@ -98,7 +97,7 @@ export default async function MovimientosPage({ searchParams }: Props) {
       </Card>
 
       {/* Summary row */}
-      {movements.length > 0 && (
+      {total > 0 && (
         <div className="flex gap-6 text-sm px-1">
           <span>
             <span className="text-muted-foreground">Ingresos: </span>
@@ -114,7 +113,7 @@ export default async function MovimientosPage({ searchParams }: Props) {
               {fmt(totalIngreso - totalEgreso)}
             </Money>
           </span>
-          <span className="text-muted-foreground">{movements.length} movimiento{movements.length !== 1 ? "s" : ""}</span>
+          <span className="text-muted-foreground">{total} movimiento{total !== 1 ? "s" : ""}</span>
         </div>
       )}
 
@@ -179,6 +178,21 @@ export default async function MovimientosPage({ searchParams }: Props) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {total > 0 && (
+        <Pager
+          page={page}
+          pageCount={pageCount}
+          total={total}
+          basePath="/finanzas/movimientos"
+          query={{
+            from: params.from,
+            to: params.to,
+            accountId: params.accountId,
+            type: params.type,
+          }}
+        />
       )}
     </div>
   );

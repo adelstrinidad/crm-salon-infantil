@@ -8,6 +8,7 @@ import type { EventFormInput } from "@/lib/events/schema";
 import { createEvent, updateEvent, deleteEvent } from "@/lib/events/eventService";
 import { addServiceToEvent } from "@/lib/events/eventServiceLines";
 import { addProviderToEvent } from "@/lib/events/eventProviderLines";
+import { requireSession } from "@/lib/auth/session";
 
 type EventLines = { services: { serviceId: string; qty: number }[]; providerIds: string[] };
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
@@ -16,6 +17,7 @@ export async function createEventAction(
   formInput: EventFormInput,
   lines?: EventLines
 ): Promise<ActionResult> {
+  await requireSession();
   const parsed = eventSchema.safeParse(formInput);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
@@ -35,6 +37,7 @@ export async function updateEventAction(
   id: string,
   formInput: EventFormInput
 ): Promise<ActionResult> {
+  await requireSession();
   const parsed = eventSchema.safeParse(formInput);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
@@ -45,6 +48,7 @@ export async function updateEventAction(
 }
 
 export async function deleteEventAction(id: string): Promise<ActionResult> {
+  await requireSession();
   await deleteEvent(id);
   revalidatePath("/eventos");
   return { ok: true };

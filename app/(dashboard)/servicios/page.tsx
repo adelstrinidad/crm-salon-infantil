@@ -3,6 +3,7 @@ import { listServices } from "@/lib/services/serviceService";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 import { DeleteServiceButton } from "./DeleteServiceButton";
 
 export default async function ServiciosPage() {
@@ -41,9 +42,9 @@ export default async function ServiciosPage() {
                   <td className="px-4 py-3 font-medium">{s.name}</td>
                   <td className="px-4 py-3 text-muted-foreground text-xs max-w-[200px] truncate">{s.description ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{s.proveedor?.name ?? "—"}</td>
-                  <td className="px-4 py-3">${s.cost.toFixed(2)}</td>
-                  <td className="px-4 py-3">${s.price.toFixed(2)}</td>
-                  <td className="px-4 py-3">${(s.price - s.cost).toFixed(2)}</td>
+                  <td className="px-4 py-3">{formatMoney(s.cost)}</td>
+                  <td className="px-4 py-3">{formatMoney(s.price)}</td>
+                  <td className="px-4 py-3">{formatMoney(s.price - s.cost)}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <Link

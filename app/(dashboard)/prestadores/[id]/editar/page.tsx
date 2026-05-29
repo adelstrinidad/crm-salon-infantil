@@ -3,6 +3,7 @@ import { getProvider } from "@/lib/providers/providerService";
 import { ProviderForm } from "@/components/prestadores/ProviderForm";
 import { updateProviderAction } from "../../actions";
 import type { ProviderFormInput } from "@/lib/providers/schema";
+import { centsToPesos } from "@/lib/money";
 import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ id: string }> };
@@ -15,7 +16,7 @@ export default async function EditarPrestadorPage({ params }: Props) {
   const defaultValues: ProviderFormInput = {
     name: provider.name,
     role: provider.role ?? "",
-    cost: String(provider.cost),
+    cost: String(centsToPesos(provider.cost)),
   };
 
   async function handleSubmit(data: ProviderFormInput) {

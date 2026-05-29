@@ -39,18 +39,40 @@ export async function listMovementsFiltered(opts: {
   to?: Date;
   accountId?: string;
   type?: string;
+  skip?: number;
+  take?: number;
 }) {
-  return prisma.movement.findMany({
-    where: {
-      ...(opts.from || opts.to
-        ? { date: { ...(opts.from ? { gte: opts.from } : {}), ...(opts.to ? { lte: opts.to } : {}) } }
-        : {}),
-      ...(opts.accountId ? { accountId: opts.accountId } : {}),
-      ...(opts.type ? { type: opts.type as MovementFormValues["type"] } : {}),
-    },
-    orderBy: { date: "desc" },
-    include: { account: true, toAccount: true },
-  });
+  const where = {
+    ...(opts.from || opts.to
+      ? { date: { ...(opts.from ? { gte: opts.from } : {}), ...(opts.to ? { lte: opts.to } : {}) } }
+      : {}),
+    ...(opts.accountId ? { accountId: opts.accountId } : {}),
+    ...(opts.type ? { type: opts.type as MovementFormValues["type"] } : {}),
+  };
+  const paginate = opts.skip !== undefined && opts.take !== undefined;
+  const [rows, total, byType] = await Promise.all([
+    prisma.movement.findMany({
+      where,
+      orderBy: { date: "desc" },
+      include: { account: true, toAccount: true },
+      ...(paginate ? { skip: opts.skip, take: opts.take } : {}),
+    }),
+    prisma.movement.count({ where }),
+    // Aggregate over the FULL filtered set (not just the page) so the summary
+    // row stays correct regardless of pagination.
+    prisma.movement.groupBy({ by: ["type"], where, _sum: { amount: true } }),
+  ]);
+
+  let totalIngreso = 0;
+  let totalEgreso = 0;
+  for (const g of byType) {
+    const sign = MOVEMENT_SIGN[g.type as keyof typeof MOVEMENT_SIGN];
+    const sum = g._sum.amount ?? 0;
+    if (sign > 0) totalIngreso += sum;
+    else totalEgreso += sum;
+  }
+
+  return { rows, total, totalIngreso, totalEgreso };
 }
 
 export async function getMovement(id: string) {

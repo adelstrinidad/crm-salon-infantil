@@ -6,6 +6,7 @@ import { SectionTitle } from "@/components/ui/section-title";
 import { Card } from "@/components/ui/card";
 import { Money, signTone } from "@/components/ui/money";
 import { MOVEMENT_TYPE_LABELS, MOVEMENT_SIGN } from "@/lib/finanzas/schema";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { DeleteMovementButton } from "./DeleteMovementButton";
 
@@ -52,14 +53,14 @@ export default async function FinanzasPage() {
                 </div>
                 {a.description && <p className="text-xs text-muted-foreground">{a.description}</p>}
                 <Money value={a.balance} signed className="text-xl font-semibold">
-                  ${a.balance.toFixed(2)}
+                  {formatMoney(a.balance)}
                 </Money>
               </Card>
             ))}
             <Card className="p-5 bg-muted/30 space-y-1">
               <span className="font-medium text-muted-foreground">Balance total</span>
               <Money value={totalBalance} signed className="text-xl font-semibold block">
-                ${totalBalance.toFixed(2)}
+                {formatMoney(totalBalance)}
               </Money>
             </Card>
           </div>
@@ -109,7 +110,7 @@ export default async function FinanzasPage() {
                       <td className="px-4 py-2 text-muted-foreground">{m.description ?? "—"}</td>
                       <td className="px-4 py-2 text-right">
                         <Money tone={tone} className="font-medium">
-                          {sign > 0 ? "+" : "−"}${m.amount.toFixed(2)}
+                          {sign > 0 ? "+" : "−"}{formatMoney(m.amount)}
                         </Money>
                       </td>
                       <td className="px-4 py-2">

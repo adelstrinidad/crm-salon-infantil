@@ -7,14 +7,14 @@ import { Card } from "@/components/ui/card";
 import { SectionTitle } from "@/components/ui/section-title";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Money, moneyToneClass, signTone } from "@/components/ui/money";
+import { computeEventFinancials } from "@/lib/events/financials";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { RegistrarCobroPanel } from "./RegistrarCobroPanel";
 
 type Props = { params: Promise<{ id: string }> };
 
-function fmt(n: number) {
-  return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 0 })}`;
-}
+const fmt = formatMoney;
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeStyle: "short" }).format(new Date(d));
@@ -30,20 +30,22 @@ export default async function EventoDetailPage({ params }: Props) {
   ]);
   if (!event) return notFound();
 
-  const serviceCost = event.services.reduce((s, l) => s + l.service.cost * l.qty, 0);
-  const servicePrice = event.services.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const providerCost = event.providers.reduce((s, l) => s + l.provider.cost, 0);
-  const totalBonificado = event.bonificados.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const totalCost = serviceCost + providerCost;
-  const subtotal = servicePrice - totalBonificado;
-  const profit = subtotal - totalCost;
+  const { serviceCost, providerCost, totalBonificado, totalCost, profit } =
+    computeEventFinancials(event);
 
   const cobrado = movements
     .filter((m) => m.type === "INGRESO")
     .reduce((s, m) => s + m.amount, 0);
   const saldo = event.totalPrice - cobrado;
 
-  let cobradoAcumulado = 0;
+  // Running "Acumulado" per row, precomputed before render (no mutation inside JSX).
+  // Null for non-INGRESO rows, which display "—".
+  const cobradoAcumulados: (number | null)[] = [];
+  let acumulado = 0;
+  for (const m of movements) {
+    if (m.type === "INGRESO") acumulado += m.amount;
+    cobradoAcumulados.push(m.type === "INGRESO" ? acumulado : null);
+  }
 
   return (
     <div className="space-y-8">
@@ -308,8 +310,7 @@ export default async function EventoDetailPage({ params }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {movements.map((m) => {
-                  if (m.type === "INGRESO") cobradoAcumulado += m.amount;
+                {movements.map((m, i) => {
                   const tone = signTone(m.type === "INGRESO" ? 1 : -1);
                   return (
                     <tr key={m.id} className="hover:bg-muted/40 transition-colors">
@@ -330,7 +331,7 @@ export default async function EventoDetailPage({ params }: Props) {
                       </td>
                       <td className="px-3 py-2 text-right font-medium">{fmt(m.amount)}</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">
-                        {m.type === "INGRESO" ? fmt(cobradoAcumulado) : "—"}
+                        {cobradoAcumulados[i] !== null ? fmt(cobradoAcumulados[i]!) : "—"}
                       </td>
                     </tr>
                   );

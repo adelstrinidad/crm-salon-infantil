@@ -13,13 +13,12 @@ import { Card } from "@/components/ui/card";
 import { StatusBadge, statusBadgeLabel } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Money, moneyToneClass, signTone } from "@/components/ui/money";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 type Props = { searchParams: Promise<{ from?: string; to?: string; state?: string }> };
 
-function fmt(n: number) {
-  return `$${n.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
+const fmt = formatMoney;
 
 function toInputDate(d: Date) {
   const y = d.getFullYear();

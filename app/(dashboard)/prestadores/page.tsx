@@ -3,6 +3,7 @@ import { listProviders } from "@/lib/providers/providerService";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 import { DeleteProviderButton } from "./DeleteProviderButton";
 
 export default async function PrestadoresPage() {
@@ -37,7 +38,7 @@ export default async function PrestadoresPage() {
                 <tr key={p.id} className="hover:bg-muted/40 transition-colors">
                   <td className="px-4 py-3 font-medium">{p.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{p.role ?? "—"}</td>
-                  <td className="px-4 py-3">${p.cost.toFixed(2)}</td>
+                  <td className="px-4 py-3">{formatMoney(p.cost)}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <Link

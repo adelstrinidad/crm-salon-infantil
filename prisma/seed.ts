@@ -46,13 +46,14 @@ async function main() {
   }
 
   // ─── Services ─────────────────────────────────────────────────────────────
+  // Money is stored in cents (centavos).
   const serviceSeed = [
-    { name: "Salón (3 hs)", cost: 5000, price: 25000, proveedorId: null },
-    { name: "Torta temática", cost: 8000, price: 18000, proveedorId: proveedores["Pastelería Dulce"] },
-    { name: "Decoración con globos", cost: 4000, price: 12000, proveedorId: proveedores["Decoradora Magia"] },
-    { name: "Catering kids", cost: 6000, price: 15000, proveedorId: proveedores["Catering Sabores"] },
-    { name: "Animación", cost: 0, price: 10000, proveedorId: null },
-    { name: "Fotografía", cost: 0, price: 14000, proveedorId: null },
+    { name: "Salón (3 hs)", cost: 500000, price: 2500000, proveedorId: null },
+    { name: "Torta temática", cost: 800000, price: 1800000, proveedorId: proveedores["Pastelería Dulce"] },
+    { name: "Decoración con globos", cost: 400000, price: 1200000, proveedorId: proveedores["Decoradora Magia"] },
+    { name: "Catering kids", cost: 600000, price: 1500000, proveedorId: proveedores["Catering Sabores"] },
+    { name: "Animación", cost: 0, price: 1000000, proveedorId: null },
+    { name: "Fotografía", cost: 0, price: 1400000, proveedorId: null },
   ];
   const services: Record<string, string> = {};
   for (const s of serviceSeed) {
@@ -63,9 +64,9 @@ async function main() {
 
   // ─── Providers (staff) ────────────────────────────────────────────────────
   const providerSeed = [
-    { name: "Lucas Pérez", role: "DJ", cost: 8000 },
-    { name: "Mariana Gómez", role: "Animadora", cost: 7000 },
-    { name: "Carlos Ruiz", role: "Fotógrafo", cost: 10000 },
+    { name: "Lucas Pérez", role: "DJ", cost: 800000 },
+    { name: "Mariana Gómez", role: "Animadora", cost: 700000 },
+    { name: "Carlos Ruiz", role: "Fotógrafo", cost: 1000000 },
   ];
   const providers: Record<string, string> = {};
   for (const p of providerSeed) {
@@ -107,7 +108,7 @@ async function main() {
         startAt: day(7, 15),
         endAt: day(7, 18),
         state: "RESERVADO",
-        totalPrice: 70000,
+        totalPrice: 7000000,
         services: {
           create: [
             { serviceId: services["Salón (3 hs)"], qty: 1 },
@@ -130,7 +131,7 @@ async function main() {
         startAt: day(14, 17),
         endAt: day(14, 20),
         state: "PRESUPUESTADO",
-        totalPrice: 55000,
+        totalPrice: 5500000,
         services: {
           create: [
             { serviceId: services["Salón (3 hs)"], qty: 1 },
@@ -149,7 +150,7 @@ async function main() {
         startAt: day(-7, 16),
         endAt: day(-7, 19),
         state: "PAGADO",
-        totalPrice: 85000,
+        totalPrice: 8500000,
         services: {
           create: [
             { serviceId: services["Salón (3 hs)"], qty: 1 },

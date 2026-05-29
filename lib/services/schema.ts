@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parsePesosToCents } from "@/lib/money";
 
 export const serviceFormInputSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -13,8 +14,8 @@ export type ServiceFormInput = z.infer<typeof serviceFormInputSchema>;
 export const serviceSchema = serviceFormInputSchema.transform((data) => ({
   ...data,
   description: data.description || null,
-  cost: parseFloat(data.cost ?? "0"),
-  price: parseFloat(data.price ?? "0"),
+  cost: parsePesosToCents(data.cost),
+  price: parsePesosToCents(data.price),
   proveedorId: data.proveedorId || null,
 }));
 

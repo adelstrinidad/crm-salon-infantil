@@ -2,6 +2,7 @@
 // Rule: use plain z.string() in the form schema (what HTML sends), coerce/transform in eventSchema.
 
 import { z } from "zod";
+import { parsePesosToCents } from "@/lib/money";
 
 export const EventState = {
   PRESUPUESTADO: "PRESUPUESTADO",
@@ -35,7 +36,7 @@ export const eventSchema = eventFormInputSchema.transform((data) => ({
   ...data,
   startAt: new Date(data.startAt),
   endAt: new Date(data.endAt),
-  totalPrice: parseFloat(data.totalPrice ?? "0"),
+  totalPrice: parsePesosToCents(data.totalPrice),
 }));
 
 export type EventFormValues = z.output<typeof eventSchema>;

@@ -4,6 +4,7 @@ import { listProveedores } from "@/lib/proveedores/proveedorService";
 import { ServiceForm } from "@/components/servicios/ServiceForm";
 import { updateServiceAction } from "../../actions";
 import type { ServiceFormInput } from "@/lib/services/schema";
+import { centsToPesos } from "@/lib/money";
 import { PageHeader } from "@/components/ui/page-header";
 
 type Props = { params: Promise<{ id: string }> };
@@ -19,8 +20,8 @@ export default async function EditarServicioPage({ params }: Props) {
   const defaultValues: ServiceFormInput = {
     name: service.name,
     description: service.description ?? "",
-    cost: String(service.cost),
-    price: String(service.price),
+    cost: String(centsToPesos(service.cost)),
+    price: String(centsToPesos(service.price)),
     proveedorId: service.proveedorId ?? "",
   };
 

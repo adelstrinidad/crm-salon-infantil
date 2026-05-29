@@ -9,6 +9,8 @@ import { EventServicePicker } from "@/components/eventos/EventServicePicker";
 import { EventProviderPicker } from "@/components/eventos/EventProviderPicker";
 import { EventBonificadoPicker } from "@/components/eventos/EventBonificadoPicker";
 import { updateEventAction } from "../../actions";
+import { computeEventFinancials } from "@/lib/events/financials";
+import { centsToPesos, formatMoney } from "@/lib/money";
 import type { EventFormInput, EventState } from "@/lib/events/schema";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionTitle } from "@/components/ui/section-title";
@@ -33,13 +35,8 @@ export default async function EditarEventoPage({ params }: Props) {
   ]);
   if (!event) return notFound();
 
-  const serviceCost = event.services.reduce((s, l) => s + l.service.cost * l.qty, 0);
-  const servicePrice = event.services.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const providerCost = event.providers.reduce((s, l) => s + l.provider.cost, 0);
-  const totalBonificado = event.bonificados.reduce((s, l) => s + l.service.price * l.qty, 0);
-  const totalCost = serviceCost + providerCost;
-  const subtotal = servicePrice - totalBonificado;
-  const profit = subtotal - totalCost;
+  const { serviceCost, servicePrice, providerCost, totalBonificado, totalCost, subtotal, profit } =
+    computeEventFinancials(event);
 
   const defaultValues: EventFormInput = {
     name: event.name,
@@ -51,7 +48,7 @@ export default async function EditarEventoPage({ params }: Props) {
     state: event.state as EventState,
     details: event.details ?? "",
     notes: event.notes ?? "",
-    totalPrice: String(event.totalPrice),
+    totalPrice: String(centsToPesos(event.totalPrice)),
   };
 
   async function handleSubmit(data: EventFormInput) {
@@ -90,20 +87,20 @@ export default async function EditarEventoPage({ params }: Props) {
         <SectionTitle>Resumen financiero</SectionTitle>
         <div className="grid grid-cols-2 gap-1 max-w-xs">
           <span className="text-muted-foreground">Precio servicios</span>
-          <span>${servicePrice.toFixed(2)}</span>
+          <span>{formatMoney(servicePrice)}</span>
           <span className="text-muted-foreground">Costo servicios</span>
-          <span>${serviceCost.toFixed(2)}</span>
+          <span>{formatMoney(serviceCost)}</span>
           <span className="text-muted-foreground">Costo prestadores</span>
-          <span>${providerCost.toFixed(2)}</span>
+          <span>{formatMoney(providerCost)}</span>
           <span className="text-muted-foreground">Total bonificado</span>
-          <span className="text-accent">-${totalBonificado.toFixed(2)}</span>
+          <span className="text-accent">-{formatMoney(totalBonificado)}</span>
           <span className="text-muted-foreground font-medium">Subtotal</span>
-          <span className="font-medium">${subtotal.toFixed(2)}</span>
+          <span className="font-medium">{formatMoney(subtotal)}</span>
           <span className="text-muted-foreground font-medium">Costo total</span>
-          <span className="font-medium">${totalCost.toFixed(2)}</span>
+          <span className="font-medium">{formatMoney(totalCost)}</span>
           <span className="text-muted-foreground font-medium">Ganancia estimada</span>
           <Money value={profit} signed className="font-medium">
-            ${profit.toFixed(2)}
+            {formatMoney(profit)}
           </Money>
         </div>
       </div>

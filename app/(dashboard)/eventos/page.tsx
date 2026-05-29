@@ -1,14 +1,22 @@
 import Link from "next/link";
-import { listEvents } from "@/lib/events/eventService";
+import { listEventsPage } from "@/lib/events/eventService";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Pager } from "@/components/ui/pager";
+import { parsePage, buildPaginated } from "@/lib/pagination";
+import { formatMoney } from "@/lib/money";
 import { DeleteButton } from "./DeleteButton";
 import { cn } from "@/lib/utils";
 import type { Event } from "@/app/generated/prisma/client";
 
-export default async function EventosPage() {
-  const events = await listEvents();
+type Props = { searchParams: Promise<{ page?: string }> };
+
+export default async function EventosPage({ searchParams }: Props) {
+  const { page: pageParam } = await searchParams;
+  const pageParams = parsePage(pageParam);
+  const { rows, total } = await listEventsPage({ skip: pageParams.skip, take: pageParams.take });
+  const { rows: events, page, pageCount } = buildPaginated(rows, total, pageParams);
 
   return (
     <div>
@@ -57,7 +65,7 @@ export default async function EventosPage() {
                     <StatusBadge state={event.state} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    ${event.totalPrice.toFixed(2)}
+                    {formatMoney(event.totalPrice)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
@@ -74,6 +82,12 @@ export default async function EventosPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {total > 0 && (
+        <div className="mt-4">
+          <Pager page={page} pageCount={pageCount} total={total} basePath="/eventos" />
         </div>
       )}
     </div>
