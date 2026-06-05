@@ -76,6 +76,22 @@
 - NEVER ignore test output - logs contain CRITICAL information
 - TEST OUTPUT MUST BE PRISTINE TO PASS
 
+### 4.1 Definition of Done — tests before push (MANDATORY)
+
+Every new feature or behavior change **MUST** ship with its tests, written
+**before** the work is pushed. A branch is not "done" without them.
+
+- **Unit tests** for every new pure function / calculation (money math, financial
+  summaries, validation schemas, balance/aggregation logic). No calc merges untested.
+- **Integration tests** for every new `lib/*Service.ts` function or DB query, run
+  against the test database (see Backend Constitution §VIII).
+- **E2E (Playwright)** for every new user-facing flow (see Frontend Constitution §VIII).
+- `npm test` (unit + integration) **MUST pass with pristine output before pushing.**
+  Run it locally; do not push red or skipped tests.
+- A bug fix **MUST** add a test that fails before the fix and passes after (regression lock).
+- Test-type coverage is **not optional** per `.ai/0_core_memory/coding-standards.md`
+  (NO EXCEPTIONS POLICY) — skipping a test type requires the human's explicit written authorization.
+
 ---
 
 **See Also**: general-overview.md and architecture.md (loaded via `@` above)

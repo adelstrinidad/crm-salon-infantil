@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { MOVEMENT_SIGN } from "@/lib/finanzas/schema";
+import { summarizeMovements } from "@/lib/finanzas/balance";
 import type { EventState } from "@/lib/events/schema";
 import { computeEventFinancials } from "@/lib/events/financials";
 
@@ -97,15 +97,7 @@ export async function getMovementSummary(from: Date, to: Date) {
     orderBy: { date: "desc" },
   });
 
-  let totalIngreso = 0;
-  let totalEgreso = 0;
-  for (const m of movements) {
-    const sign = MOVEMENT_SIGN[m.type as keyof typeof MOVEMENT_SIGN];
-    if (sign > 0) totalIngreso += m.amount;
-    else totalEgreso += m.amount;
-  }
-
-  return { movements, totalIngreso, totalEgreso, net: totalIngreso - totalEgreso };
+  return { movements, ...summarizeMovements(movements) };
 }
 
 export async function getMovementsWithoutEvent(from: Date, to: Date) {
