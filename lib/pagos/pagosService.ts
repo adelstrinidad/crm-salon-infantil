@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { MovementFormValues } from "@/lib/finanzas/schema";
 
 export async function getProviderPayments(opts: {
   from?: Date;
@@ -30,6 +31,23 @@ export async function markProviderPaid(eventProviderId: string) {
     where: { id: eventProviderId },
     data: { paid: true, paidAt: new Date() },
   });
+}
+
+// Settle a staff (prestador) payment atomically: mark the line paid AND record
+// the EGRESO movement in a single transaction. Either both commit or neither —
+// prevents a line being marked paid while its cash-outflow movement is missing.
+export async function payProvider(
+  eventProviderId: string,
+  movement: MovementFormValues
+) {
+  const [, created] = await prisma.$transaction([
+    prisma.eventProvider.update({
+      where: { id: eventProviderId },
+      data: { paid: true, paidAt: new Date() },
+    }),
+    prisma.movement.create({ data: movement }),
+  ]);
+  return created;
 }
 
 export async function getProveedorPayments(opts: {
@@ -66,4 +84,20 @@ export async function markServicePaid(eventServiceId: string) {
     where: { id: eventServiceId },
     data: { paid: true, paidAt: new Date() },
   });
+}
+
+// Settle a supplier (proveedor) payment atomically: mark the service line paid
+// AND record the EGRESO movement in a single transaction. See payProvider.
+export async function payService(
+  eventServiceId: string,
+  movement: MovementFormValues
+) {
+  const [, created] = await prisma.$transaction([
+    prisma.eventService.update({
+      where: { id: eventServiceId },
+      data: { paid: true, paidAt: new Date() },
+    }),
+    prisma.movement.create({ data: movement }),
+  ]);
+  return created;
 }
