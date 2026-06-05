@@ -6,6 +6,8 @@ import {
   updateEvent,
   deleteEvent,
   setEventState,
+  rescheduleEvent,
+  findBlockingOverlap,
   listEventsPage,
   listEventsInRange,
 } from "@/lib/events/eventService";
@@ -63,10 +65,49 @@ describe("updateEvent / setEventState / deleteEvent", () => {
     expect(updated.name).toBe(e.name); // untouched
   });
 
+  it("reschedules only the time range, leaving other fields intact", async () => {
+    const e = await createEvent(baseEvent);
+    const newStart = new Date("2026-07-20T16:00:00");
+    const newEnd = new Date("2026-07-20T19:00:00");
+    const moved = await rescheduleEvent(e.id, newStart, newEnd);
+    expect(moved.startAt.getTime()).toBe(newStart.getTime());
+    expect(moved.endAt.getTime()).toBe(newEnd.getTime());
+    expect(moved.name).toBe(baseEvent.name); // untouched
+    expect(moved.totalPrice).toBe(baseEvent.totalPrice); // untouched
+    expect(moved.state).toBe(baseEvent.state); // untouched
+  });
+
   it("deletes an event", async () => {
     const e = await createEvent(baseEvent);
     await deleteEvent(e.id);
     await expect(getEvent(e.id)).rejects.toThrow();
+  });
+});
+
+describe("findBlockingOverlap (double-booking guard)", () => {
+  const at = (h: number) => new Date(`2026-06-10T${String(h).padStart(2, "0")}:00:00`);
+
+  it("finds a confirmed booking overlapping the slot", async () => {
+    await makeEvent({ name: "Reservado", state: "RESERVADO", startAt: at(15), endAt: at(18) });
+    const conflict = await findBlockingOverlap(at(16), at(19));
+    expect(conflict?.name).toBe("Reservado");
+  });
+
+  it("returns null when the slot is free", async () => {
+    await makeEvent({ name: "Reservado", state: "RESERVADO", startAt: at(15), endAt: at(18) });
+    expect(await findBlockingOverlap(at(18), at(20))).toBeNull(); // touching edge, half-open
+  });
+
+  it("ignores quotes and suspended events (non-blocking states)", async () => {
+    await makeEvent({ name: "Quote", state: "PRESUPUESTADO", startAt: at(15), endAt: at(18) });
+    await makeEvent({ name: "Suspended", state: "SUSPENDIDO", startAt: at(15), endAt: at(18) });
+    expect(await findBlockingOverlap(at(16), at(17))).toBeNull();
+  });
+
+  it("excludes the event being edited via excludeId", async () => {
+    const e = await makeEvent({ name: "Self", state: "PAGADO", startAt: at(15), endAt: at(18) });
+    expect(await findBlockingOverlap(at(15), at(18))).not.toBeNull();
+    expect(await findBlockingOverlap(at(15), at(18), e.id)).toBeNull();
   });
 });
 

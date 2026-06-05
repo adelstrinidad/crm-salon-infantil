@@ -96,8 +96,8 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
 
       {unattached.length > 0 && (
         <div className="flex gap-2 items-end">
-          <div className="flex-1 space-y-1">
-            <label className="text-sm font-medium">Agregar bonificado</label>
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium">Agregar bonificado</label>
             <Select
               items={Object.fromEntries(unattached.map((s) => [s.id, `${s.name} (${formatMoney(s.price)})`]))}
               value={selectedId}
@@ -115,17 +115,17 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-20 space-y-1">
-            <label className="text-sm font-medium">Cant.</label>
+          <div className="w-20">
+            <label className="mb-1 block text-sm font-medium">Cant.</label>
             <input
               type="number"
               min={1}
               value={qty}
               onChange={(e) => setQty(Number(e.target.value))}
-              className="w-full border rounded px-2 py-1.5 text-sm"
+              className="h-9 w-full rounded-md border bg-card px-3 text-sm"
             />
           </div>
-          <Button onClick={handleAdd} disabled={busy || !selectedId} size="sm">
+          <Button onClick={handleAdd} disabled={busy || !selectedId}>
             Agregar
           </Button>
         </div>

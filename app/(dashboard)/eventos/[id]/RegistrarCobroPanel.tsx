@@ -60,7 +60,7 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} variant="outline" size="sm">
+      <Button onClick={() => setOpen(true)} variant="outline">
         Registrar cobro
       </Button>
 
