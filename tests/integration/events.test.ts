@@ -9,6 +9,7 @@ import {
   rescheduleEvent,
   findBlockingOverlap,
   listEventsPage,
+  listEventsFiltered,
   listEventsInRange,
 } from "@/lib/events/eventService";
 
@@ -126,6 +127,85 @@ describe("listEventsPage", () => {
     await makeEvent({ name: "Newer", startAt: new Date("2026-06-20T10:00:00") });
     const { rows } = await listEventsPage({ skip: 0, take: 10 });
     expect(rows[0].name).toBe("Newer");
+  });
+});
+
+describe("listEventsFiltered", () => {
+  it("filters by text search across name and clientName", async () => {
+    await makeEvent({ name: "Fiesta Sofía", clientName: "García" });
+    await makeEvent({ name: "Otro evento", clientName: "Sofía Pérez" });
+    await makeEvent({ name: "Sin coincidencia", clientName: "López" });
+
+    const { rows, total } = await listEventsFiltered({ q: "Sofía", skip: 0, take: 10 });
+    expect(total).toBe(2);
+    expect(rows.map((r) => r.name).sort()).toEqual(["Fiesta Sofía", "Otro evento"]);
+  });
+
+  it("filters by state", async () => {
+    await makeEvent({ name: "A", state: "RESERVADO" });
+    await makeEvent({ name: "B", state: "PRESUPUESTADO" });
+    const { rows, total } = await listEventsFiltered({ state: "RESERVADO", skip: 0, take: 10 });
+    expect(total).toBe(1);
+    expect(rows[0].name).toBe("A");
+  });
+
+  it("filters by eventType", async () => {
+    await makeEvent({ name: "Cumple", eventType: "Cumpleaños" });
+    await makeEvent({ name: "Corp", eventType: "Corporativo" });
+    const { rows, total } = await listEventsFiltered({ eventType: "Corporativo", skip: 0, take: 10 });
+    expect(total).toBe(1);
+    expect(rows[0].name).toBe("Corp");
+  });
+
+  it("filters by start-date range", async () => {
+    await makeEvent({ name: "Before", startAt: new Date("2026-05-30T12:00:00") });
+    await makeEvent({ name: "Inside", startAt: new Date("2026-06-15T12:00:00") });
+    await makeEvent({ name: "After", startAt: new Date("2026-07-05T12:00:00") });
+    const { rows } = await listEventsFiltered({
+      from: new Date("2026-06-01T00:00:00"),
+      to: new Date("2026-06-30T23:59:59"),
+      skip: 0,
+      take: 10,
+    });
+    expect(rows.map((r) => r.name)).toEqual(["Inside"]);
+  });
+
+  it("combines filters (AND) and counts only matches", async () => {
+    await makeEvent({ name: "Match", clientName: "Sofía", state: "RESERVADO" });
+    await makeEvent({ name: "WrongState", clientName: "Sofía", state: "PRESUPUESTADO" });
+    await makeEvent({ name: "WrongName", clientName: "Otro", state: "RESERVADO" });
+    const { rows, total } = await listEventsFiltered({
+      q: "Sofía",
+      state: "RESERVADO",
+      skip: 0,
+      take: 10,
+    });
+    expect(total).toBe(1);
+    expect(rows[0].name).toBe("Match");
+  });
+
+  it("sorts by name ascending when requested", async () => {
+    await makeEvent({ name: "Zeta" });
+    await makeEvent({ name: "Alfa" });
+    const { rows } = await listEventsFiltered({ sort: "name:asc", skip: 0, take: 10 });
+    expect(rows.map((r) => r.name)).toEqual(["Alfa", "Zeta"]);
+  });
+
+  it("sorts by totalPrice descending when requested", async () => {
+    await makeEvent({ name: "Cheap", totalPrice: 100_00 });
+    await makeEvent({ name: "Pricey", totalPrice: 900_00 });
+    const { rows } = await listEventsFiltered({ sort: "totalPrice:desc", skip: 0, take: 10 });
+    expect(rows[0].name).toBe("Pricey");
+  });
+
+  it("defaults to startAt desc and paginates with the full count", async () => {
+    for (let i = 1; i <= 5; i++) {
+      await makeEvent({ name: `E${i}`, startAt: new Date(`2026-06-0${i}T12:00:00`) });
+    }
+    const { rows, total } = await listEventsFiltered({ skip: 0, take: 2 });
+    expect(total).toBe(5);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].name).toBe("E5"); // newest first
   });
 });
 

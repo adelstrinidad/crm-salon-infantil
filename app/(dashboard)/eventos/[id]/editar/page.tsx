@@ -15,6 +15,7 @@ import type { EventFormInput, EventState } from "@/lib/events/schema";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionTitle } from "@/components/ui/section-title";
 import { Money } from "@/components/ui/money";
+import Link from "next/link";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -64,6 +65,9 @@ export default async function EditarEventoPage({ params }: Props) {
           onSubmit={handleSubmit}
           defaultValues={defaultValues}
           submitLabel="Guardar cambios"
+          stickyBar={false}
+          hideActions={true}
+          formId="event-edit-form"
           eventTypes={allEventTypes}
           clients={allClients}
         />
@@ -103,6 +107,22 @@ export default async function EditarEventoPage({ params }: Props) {
             {formatMoney(profit)}
           </Money>
         </div>
+      </div>
+
+      <div className="flex gap-3 border-t pt-6">
+        <button
+          type="submit"
+          form="event-edit-form"
+          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+        >
+          Guardar cambios
+        </button>
+        <Link
+          href="/eventos"
+          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+        >
+          Cancelar
+        </Link>
       </div>
     </div>
   );

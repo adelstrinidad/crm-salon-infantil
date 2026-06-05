@@ -60,6 +60,9 @@ type EventFormProps = {
   defaultValues?: Partial<EventFormInput>;
   submitLabel?: string;
   submitVariant?: "create" | "edit";
+  stickyBar?: boolean;
+  hideActions?: boolean;
+  formId?: string;
   availableServices?: AvailableService[];
   availableProviders?: AvailableProvider[];
   eventTypes?: AvailableEventType[];
@@ -72,6 +75,9 @@ export function EventForm({
   defaultValues,
   submitLabel = "Guardar",
   submitVariant = "edit",
+  stickyBar = true,
+  hideActions = false,
+  formId,
   availableServices,
   availableProviders,
   eventTypes,
@@ -176,7 +182,7 @@ export function EventForm({
   const fmt = formatMoney;
 
   return (
-    <form onSubmit={buildSubmit()} className="space-y-6 max-w-2xl">
+    <form id={formId} onSubmit={buildSubmit()} className={cn("space-y-6 max-w-2xl", stickyBar && "pb-20")}>
       <div className="space-y-1">
         <Label htmlFor="name">Nombre del evento</Label>
         <Input id="name" {...register("name")} placeholder="Cumpleaños de Sofía" />
@@ -424,35 +430,37 @@ export function EventForm({
 
       {/* Sticky action bar — stays visible on short viewports so the submit
           buttons are always reachable without scrolling to the page bottom. */}
-      <div className="sticky bottom-0 z-10 -mx-4 flex gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        {submitVariant === "create" ? (
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSubmitting}
-              onClick={buildSubmit(EventState.PRESUPUESTADO)}
-              className="border-yellow-400 text-yellow-700 hover:bg-yellow-50"
-            >
-              {isSubmitting ? "Guardando…" : "Presupuestar"}
+      {!hideActions && (
+        <div className={cn("flex gap-3 border-t px-4 py-3", stickyBar ? "sticky bottom-0 z-10 -mx-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80" : "mt-2")}>
+          {submitVariant === "create" ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting}
+                onClick={buildSubmit(EventState.PRESUPUESTADO)}
+                className="border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+              >
+                {isSubmitting ? "Guardando…" : "Presupuestar"}
+              </Button>
+              <Button
+                type="button"
+                disabled={isSubmitting}
+                onClick={buildSubmit(EventState.RESERVADO)}
+              >
+                {isSubmitting ? "Guardando…" : "Reservar"}
+              </Button>
+            </>
+          ) : (
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Guardando…" : submitLabel}
             </Button>
-            <Button
-              type="button"
-              disabled={isSubmitting}
-              onClick={buildSubmit(EventState.RESERVADO)}
-            >
-              {isSubmitting ? "Guardando…" : "Reservar"}
-            </Button>
-          </>
-        ) : (
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Guardando…" : submitLabel}
-          </Button>
-        )}
-        <Link href="/eventos" className={cn(buttonVariants({ variant: "outline" }))}>
-          Cancelar
-        </Link>
-      </div>
+          )}
+          <Link href="/eventos" className={cn(buttonVariants({ variant: "outline" }))}>
+            Cancelar
+          </Link>
+        </div>
+      )}
 
       {/* Submit errors (e.g. double-booking) surface as a modal alert. */}
       <Dialog open={!!serverError} onOpenChange={(open) => !open && setServerError(null)}>

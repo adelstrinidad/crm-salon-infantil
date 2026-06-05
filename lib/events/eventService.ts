@@ -2,6 +2,8 @@
 // Server Actions and Route Handlers call these functions — they never import Prisma directly.
 import { prisma } from "@/lib/prisma";
 import type { EventFormValues, EventState } from "./schema";
+import { parseEventSort } from "./listFilters";
+import type { Prisma } from "@/app/generated/prisma/client";
 
 export async function listEvents() {
   return prisma.event.findMany({
@@ -19,6 +21,55 @@ export async function listEventsPage(opts: { skip: number; take: number }) {
       take: opts.take,
     }),
     prisma.event.count(),
+  ]);
+  return { rows, total };
+}
+
+// Filtered + sorted + paginated list for the events table. Builds a Prisma
+// `where` from optional filters (text search, state, type, date range) and an
+// `orderBy` from a validated sort string. Returns the page rows plus the total
+// matching count so the pager stays correct.
+export async function listEventsFiltered(opts: {
+  q?: string;
+  state?: string;
+  eventType?: string;
+  from?: Date;
+  to?: Date;
+  sort?: string;
+  skip: number;
+  take: number;
+}) {
+  const where: Prisma.EventWhereInput = {
+    ...(opts.q
+      ? {
+          OR: [
+            { name: { contains: opts.q } },
+            { clientName: { contains: opts.q } },
+          ],
+        }
+      : {}),
+    ...(opts.state ? { state: opts.state as EventState } : {}),
+    ...(opts.eventType ? { eventType: opts.eventType } : {}),
+    ...(opts.from || opts.to
+      ? {
+          startAt: {
+            ...(opts.from ? { gte: opts.from } : {}),
+            ...(opts.to ? { lte: opts.to } : {}),
+          },
+        }
+      : {}),
+  };
+
+  const { field, dir } = parseEventSort(opts.sort);
+
+  const [rows, total] = await Promise.all([
+    prisma.event.findMany({
+      where,
+      orderBy: { [field]: dir },
+      skip: opts.skip,
+      take: opts.take,
+    }),
+    prisma.event.count({ where }),
   ]);
   return { rows, total };
 }
