@@ -1,18 +1,35 @@
 import Link from "next/link";
-import { Plus, PartyPopper, ChevronRight } from "lucide-react";
-import { listEventsPage } from "@/lib/events/eventService";
-import { buttonVariants } from "@/components/ui/button";
+import { Plus, PartyPopper, ChevronRight, Search } from "lucide-react";
+import { listEventsFiltered } from "@/lib/events/eventService";
+import { listEventTypes } from "@/lib/eventTypes/eventTypeService";
+import { buttonVariants, Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Card } from "@/components/ui/card";
+import { StatusBadge, statusBadgeLabel } from "@/components/ui/status-badge";
 import { Pager } from "@/components/ui/pager";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { SelectFilter } from "@/components/ui/select-filter";
+import { SortSelect } from "@/components/ui/sort-select";
 import { parsePage, buildPaginated } from "@/lib/pagination";
+import { EventState } from "@/lib/events/schema";
+import { EVENT_SORT_OPTIONS, DEFAULT_EVENT_SORT } from "@/lib/events/listFilters";
 import { formatMoney } from "@/lib/money";
 import { DeleteButton } from "./DeleteButton";
 import { cn } from "@/lib/utils";
 import type { Event } from "@/app/generated/prisma/client";
 
-type Props = { searchParams: Promise<{ page?: string }> };
+type Props = {
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    state?: string;
+    eventType?: string;
+    from?: string;
+    to?: string;
+    sort?: string;
+  }>;
+};
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeStyle: "short" }).format(
@@ -21,13 +38,43 @@ function fmtDate(d: Date) {
 }
 
 export default async function EventosPage({ searchParams }: Props) {
-  const { page: pageParam } = await searchParams;
-  const pageParams = parsePage(pageParam);
-  const { rows, total } = await listEventsPage({ skip: pageParams.skip, take: pageParams.take });
+  const params = await searchParams;
+  const pageParams = parsePage(params.page, 15);
+
+  const from = params.from ? new Date(params.from + "T00:00:00") : undefined;
+  const to = params.to ? new Date(params.to + "T23:59:59") : undefined;
+  const sort = params.sort || DEFAULT_EVENT_SORT;
+
+  const [{ rows, total }, eventTypes] = await Promise.all([
+    listEventsFiltered({
+      q: params.q || undefined,
+      state: params.state || undefined,
+      eventType: params.eventType || undefined,
+      from,
+      to,
+      sort,
+      skip: pageParams.skip,
+      take: pageParams.take,
+    }),
+    listEventTypes(),
+  ]);
   const { rows: events, page, pageCount } = buildPaginated(rows, total, pageParams);
 
+  // Filters that should be preserved across pager links.
+  const filterQuery = {
+    q: params.q,
+    state: params.state,
+    eventType: params.eventType,
+    from: params.from,
+    to: params.to,
+    sort: params.sort,
+  };
+  const hasFilters = Boolean(
+    params.q || params.state || params.eventType || params.from || params.to,
+  );
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Eventos"
         action={
@@ -38,16 +85,81 @@ export default async function EventosPage({ searchParams }: Props) {
         }
       />
 
+      {/* Filters + sort */}
+      <Card className="p-4">
+        <form method="GET" className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1 w-full sm:w-56">
+            <label className="text-sm font-medium">Buscar</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                name="q"
+                defaultValue={params.q ?? ""}
+                placeholder="Nombre o cliente…"
+                className="pl-9"
+              />
+            </div>
+          </div>
+          <div className="space-y-1 w-full sm:w-44">
+            <label className="text-sm font-medium">Estado</label>
+            <SelectFilter
+              name="state"
+              defaultValue={params.state ?? ""}
+              allLabel="Todos"
+              options={Object.values(EventState).map((s) => ({
+                value: s,
+                label: statusBadgeLabel(s),
+              }))}
+            />
+          </div>
+          <div className="space-y-1 w-full sm:w-44">
+            <label className="text-sm font-medium">Tipo</label>
+            <SelectFilter
+              name="eventType"
+              defaultValue={params.eventType ?? ""}
+              allLabel="Todos"
+              options={eventTypes.map((t) => ({ value: t.name, label: t.name }))}
+            />
+          </div>
+          <div className="space-y-1 w-full sm:w-40">
+            <label className="text-sm font-medium">Desde</label>
+            <Input type="date" name="from" defaultValue={params.from ?? ""} />
+          </div>
+          <div className="space-y-1 w-full sm:w-40">
+            <label className="text-sm font-medium">Hasta</label>
+            <Input type="date" name="to" defaultValue={params.to ?? ""} />
+          </div>
+          <div className="space-y-1 w-full sm:w-52">
+            <label className="text-sm font-medium">Ordenar por</label>
+            <SortSelect name="sort" defaultValue={sort} options={EVENT_SORT_OPTIONS} />
+          </div>
+          <Button type="submit">Filtrar</Button>
+          <Link href="/eventos" className={cn(buttonVariants({ variant: "outline" }))}>
+            Limpiar
+          </Link>
+        </form>
+      </Card>
+
       {events.length === 0 ? (
         <EmptyState
           icon={PartyPopper}
-          title="Todavía no hay eventos"
-          description="Creá tu primer evento para empezar a gestionar reservas, pagos y presupuestos."
+          title={hasFilters ? "Sin resultados" : "Todavía no hay eventos"}
+          description={
+            hasFilters
+              ? "Ningún evento coincide con los filtros. Probá ajustarlos o limpiarlos."
+              : "Creá tu primer evento para empezar a gestionar reservas, pagos y presupuestos."
+          }
           action={
-            <Link href="/eventos/nuevo" className={cn(buttonVariants())}>
-              <Plus className="size-4" />
-              Nuevo evento
-            </Link>
+            hasFilters ? (
+              <Link href="/eventos" className={cn(buttonVariants({ variant: "outline" }))}>
+                Limpiar filtros
+              </Link>
+            ) : (
+              <Link href="/eventos/nuevo" className={cn(buttonVariants())}>
+                <Plus className="size-4" />
+                Nuevo evento
+              </Link>
+            )
           }
         />
       ) : (
@@ -143,7 +255,13 @@ export default async function EventosPage({ searchParams }: Props) {
 
       {total > 0 && (
         <div className="mt-4">
-          <Pager page={page} pageCount={pageCount} total={total} basePath="/eventos" />
+          <Pager
+            page={page}
+            pageCount={pageCount}
+            total={total}
+            basePath="/eventos"
+            query={filterQuery}
+          />
         </div>
       )}
     </div>
