@@ -43,9 +43,41 @@ export async function setEventState(id: string, state: EventState) {
   return prisma.event.update({ where: { id }, data: { state } });
 }
 
+// Focused reschedule used by calendar drag-and-drop: only moves the time range,
+// leaving services/providers/financials untouched.
+export async function rescheduleEvent(id: string, startAt: Date, endAt: Date) {
+  return prisma.event.update({ where: { id }, data: { startAt, endAt } });
+}
+
 export async function listEventsInRange(start: Date, end: Date) {
   return prisma.event.findMany({
     where: { startAt: { gte: start, lte: end } },
+    orderBy: { startAt: "asc" },
+  });
+}
+
+// A confirmed booking occupies the venue; quotes and suspended events do not.
+// Only these states block (and are blocked by) another event in the same slot.
+export const BLOCKING_STATES: EventState[] = ["RESERVADO", "SENADO", "PAGADO", "CERRADO"];
+
+export function isBlockingState(state: EventState): boolean {
+  return BLOCKING_STATES.includes(state);
+}
+
+// Returns the first confirmed booking whose time range overlaps [startAt, endAt),
+// or null. Half-open: touching edges don't conflict. `excludeId` skips self on edit.
+export async function findBlockingOverlap(
+  startAt: Date,
+  endAt: Date,
+  excludeId?: string,
+) {
+  return prisma.event.findFirst({
+    where: {
+      state: { in: BLOCKING_STATES },
+      startAt: { lt: endAt },
+      endAt: { gt: startAt },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
     orderBy: { startAt: "asc" },
   });
 }

@@ -93,8 +93,8 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
 
       {unattached.length > 0 && (
         <div className="flex gap-2 items-end">
-          <div className="flex-1 space-y-1">
-            <label className="text-sm font-medium">Agregar prestador</label>
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium">Agregar prestador</label>
             <Select
               items={Object.fromEntries(unattached.map((p) => [p.id, `${p.name}${p.role ? ` (${p.role})` : ""}`]))}
               value={selectedId}
@@ -112,7 +112,7 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleAdd} disabled={busy || !selectedId} size="sm">
+          <Button onClick={handleAdd} disabled={busy || !selectedId}>
             Agregar
           </Button>
         </div>

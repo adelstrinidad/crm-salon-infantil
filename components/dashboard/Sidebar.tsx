@@ -16,7 +16,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </p>
         <p className="text-xs text-sidebar-foreground/70 mt-1">Panel de gestión</p>
       </div>
-      <SidebarNav onNavigate={onNavigate} />
+      {/* Nav scrolls within the fixed-height sidebar; brand + logout stay pinned. */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <SidebarNav onNavigate={onNavigate} />
+      </div>
       <div className="p-3 border-t border-sidebar-border">
         <form action={logoutAction}>
           <button

@@ -2,8 +2,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Event-state badge — single source of truth for state → color mapping
- * (was duplicated across `eventos/page.tsx`, `eventos/[id]/page.tsx`,
- * and `CalendarGrid.tsx`).
+ * (was duplicated across `eventos/page.tsx` and `eventos/[id]/page.tsx`).
  */
 export type EventStateBadge =
   | "RESERVADO"

@@ -28,6 +28,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { AddClientModal } from "@/components/clientes/AddClientModal";
 import { ClientCombobox } from "@/components/clientes/ClientCombobox";
@@ -311,8 +320,8 @@ export function EventForm({
           )}
           {unaddedServices.length > 0 && (
             <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1">
-                <Label>Agregar servicio</Label>
+              <div className="flex-1">
+                <Label className="mb-1 block">Agregar servicio</Label>
                 <Select
                   items={Object.fromEntries(unaddedServices.map((s) => [s.id, s.name]))}
                   value={pendingServiceId}
@@ -361,8 +370,8 @@ export function EventForm({
           )}
           {unaddedProviders.length > 0 && (
             <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1">
-                <Label>Agregar prestador</Label>
+              <div className="flex-1">
+                <Label className="mb-1 block">Agregar prestador</Label>
                 <Select
                   items={Object.fromEntries(unaddedProviders.map((p) => [p.id, `${p.name}${p.role ? ` (${p.role})` : ""}`]))}
                   value={pendingProviderId}
@@ -413,9 +422,9 @@ export function EventForm({
         </div>
       )}
 
-      {serverError && <p className="text-sm text-destructive font-medium">{serverError}</p>}
-
-      <div className="flex gap-3">
+      {/* Sticky action bar — stays visible on short viewports so the submit
+          buttons are always reachable without scrolling to the page bottom. */}
+      <div className="sticky bottom-0 z-10 -mx-4 flex gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         {submitVariant === "create" ? (
           <>
             <Button
@@ -444,6 +453,19 @@ export function EventForm({
           Cancelar
         </Link>
       </div>
+
+      {/* Submit errors (e.g. double-booking) surface as a modal alert. */}
+      <Dialog open={!!serverError} onOpenChange={(open) => !open && setServerError(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>No se pudo guardar el evento</DialogTitle>
+            <DialogDescription>{serverError}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button />}>Entendido</DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

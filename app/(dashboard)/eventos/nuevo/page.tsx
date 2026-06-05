@@ -16,13 +16,26 @@ const DEFAULT_DETAILS = `Te paso los Datos para confirmar
 🤩Cantidad de niños invitados:
 ⭐️Cantidad de Adultos:`;
 
-export default async function NuevoEventoPage() {
+type Props = { searchParams: Promise<{ start?: string; end?: string }> };
+
+// Accept only `YYYY-MM-DDTHH:mm` (datetime-local) to keep prefill safe.
+function sanitizeDatetimeLocal(value: string | undefined): string | undefined {
+  if (value && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return value;
+  return undefined;
+}
+
+export default async function NuevoEventoPage({ searchParams }: Props) {
+  const sp = await searchParams;
   const [services, providers, eventTypes, clients] = await Promise.all([
     listServices(),
     listProviders(),
     listEventTypes(),
     listClients(),
   ]);
+
+  // Prefill the time range when arriving from a calendar slot click.
+  const startAt = sanitizeDatetimeLocal(sp.start);
+  const endAt = sanitizeDatetimeLocal(sp.end);
 
   return (
     <div>
@@ -35,7 +48,11 @@ export default async function NuevoEventoPage() {
         eventTypes={eventTypes}
         clients={clients}
         createClient={quickCreateClientAction}
-        defaultValues={{ details: DEFAULT_DETAILS }}
+        defaultValues={{
+          details: DEFAULT_DETAILS,
+          ...(startAt ? { startAt } : {}),
+          ...(endAt ? { endAt } : {}),
+        }}
       />
     </div>
   );
