@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { markProviderPaid } from "@/lib/pagos/pagosService";
-import { createMovement } from "@/lib/finanzas/finanzasService";
+import { payProvider } from "@/lib/pagos/pagosService";
 import { requireSession } from "@/lib/auth/session";
 
 export async function pagarPrestadorAction(
@@ -13,8 +12,7 @@ export async function pagarPrestadorAction(
 ): Promise<{ ok: boolean; error?: string }> {
   await requireSession();
   if (!accountId) return { ok: false, error: "Seleccioná una cuenta" };
-  await markProviderPaid(eventProviderId);
-  await createMovement({
+  await payProvider(eventProviderId, {
     accountId,
     type: "EGRESO",
     amount,

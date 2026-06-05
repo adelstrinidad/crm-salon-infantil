@@ -6,13 +6,29 @@ import {
   makeProvider,
   makeProveedor,
   makeService,
+  makeAccount,
 } from "./setup/db";
 import {
   getProviderPayments,
   markProviderPaid,
   getProveedorPayments,
   markServicePaid,
+  payProvider,
+  payService,
 } from "@/lib/pagos/pagosService";
+
+// Build the EGRESO movement payload the pago actions pass to payProvider/payService.
+function egresoFor(accountId: string, amount = 50000) {
+  return {
+    accountId,
+    type: "EGRESO" as const,
+    amount,
+    description: "Pago",
+    date: new Date("2026-06-10T15:00:00"),
+    toAccountId: undefined,
+    eventId: undefined,
+  };
+}
 
 // Integration tests for staff (prestador) and vendor (proveedor) payment
 // tracking — the filters the pagos pages use and the mark-as-paid mutations.
@@ -126,5 +142,64 @@ describe("getProveedorPayments / markServicePaid", () => {
     const updated = await markServicePaid(link.id);
     expect(updated.paid).toBe(true);
     expect(updated.paidAt).toBeInstanceOf(Date);
+  });
+});
+
+// Regression for #6: mark-paid and the EGRESO movement must commit together.
+// Before the fix the two writes ran as separate awaits, so a failing movement
+// left the line marked paid with no cash-outflow recorded.
+describe("payProvider — atomic settlement", () => {
+  it("marks paid AND records the EGRESO movement together", async () => {
+    const { link } = await eventWithProvider();
+    const account = await makeAccount();
+
+    await payProvider(link.id, egresoFor(account.id));
+
+    const row = await prisma.eventProvider.findUniqueOrThrow({ where: { id: link.id } });
+    expect(row.paid).toBe(true);
+    expect(row.paidAt).toBeInstanceOf(Date);
+    const movements = await prisma.movement.findMany({ where: { accountId: account.id } });
+    expect(movements).toHaveLength(1);
+    expect(movements[0].type).toBe("EGRESO");
+  });
+
+  it("rolls back the paid flag when the movement creation fails", async () => {
+    const { link } = await eventWithProvider();
+    // No account with this id → movement.create violates the accountId FK and
+    // the whole transaction must roll back, leaving the line unpaid.
+    await expect(payProvider(link.id, egresoFor("nonexistent-account-id"))).rejects.toThrow();
+
+    const row = await prisma.eventProvider.findUniqueOrThrow({ where: { id: link.id } });
+    expect(row.paid).toBe(false);
+    expect(row.paidAt).toBeNull();
+    const movements = await prisma.movement.findMany();
+    expect(movements).toHaveLength(0);
+  });
+});
+
+describe("payService — atomic settlement", () => {
+  it("marks paid AND records the EGRESO movement together", async () => {
+    const { link } = await eventWithProveedorService();
+    const account = await makeAccount();
+
+    await payService(link.id, egresoFor(account.id, 30000));
+
+    const row = await prisma.eventService.findUniqueOrThrow({ where: { id: link.id } });
+    expect(row.paid).toBe(true);
+    expect(row.paidAt).toBeInstanceOf(Date);
+    const movements = await prisma.movement.findMany({ where: { accountId: account.id } });
+    expect(movements).toHaveLength(1);
+    expect(movements[0].type).toBe("EGRESO");
+  });
+
+  it("rolls back the paid flag when the movement creation fails", async () => {
+    const { link } = await eventWithProveedorService();
+    await expect(payService(link.id, egresoFor("nonexistent-account-id"))).rejects.toThrow();
+
+    const row = await prisma.eventService.findUniqueOrThrow({ where: { id: link.id } });
+    expect(row.paid).toBe(false);
+    expect(row.paidAt).toBeNull();
+    const movements = await prisma.movement.findMany();
+    expect(movements).toHaveLength(0);
   });
 });
