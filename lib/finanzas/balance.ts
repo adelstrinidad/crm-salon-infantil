@@ -9,17 +9,28 @@ import { MOVEMENT_SIGN, type MovementType } from "./schema";
 // the full Prisma row so tests can pass plain objects.
 export type SignedMovement = { type: MovementType | string; amount: number };
 
-// Signed account balance: each movement adds or subtracts per MOVEMENT_SIGN.
-//
-// NOTE: a TRANSFERENCIA only DEBITS its source account here (sign -1); the
-// matching credit to `toAccountId` is NOT added. Balances therefore treat a
-// transfer as an outflow only. This mirrors the current getAccountsWithBalance
-// behavior — see balance.test.ts "transfer" case. Flagged for review.
+// Signed sum of an account's OUTBOUND movements (rows where this account is
+// `accountId`). Each movement adds or subtracts per MOVEMENT_SIGN; a
+// TRANSFERENCIA has sign -1, so it debits the source account here. The matching
+// credit to the destination is added separately — see computeAccountBalance.
 export function computeBalance(movements: SignedMovement[]): number {
   return movements.reduce(
     (sum, m) => sum + m.amount * MOVEMENT_SIGN[m.type as MovementType],
     0
   );
+}
+
+// Full balance for one account: its outbound movements (signed) PLUS the
+// inbound transfers it received (rows where this account is `toAccountId`).
+// A TRANSFERENCIA is money-neutral overall — it debits the source (handled in
+// `outbound` via MOVEMENT_SIGN = -1) and credits the destination (+amount,
+// handled here) — so total balance across all accounts is preserved.
+export function computeAccountBalance(
+  outbound: SignedMovement[],
+  inbound: { amount: number }[]
+): number {
+  const inboundCredit = inbound.reduce((sum, m) => sum + m.amount, 0);
+  return computeBalance(outbound) + inboundCredit;
 }
 
 export type MovementTotals = {

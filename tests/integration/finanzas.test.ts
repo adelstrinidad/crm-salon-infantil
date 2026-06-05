@@ -62,6 +62,19 @@ describe("getAccountsWithBalance", () => {
     expect(result.balance).toBe(65000);
   });
 
+  it("credits the destination on a transfer (money-neutral overall)", async () => {
+    const caja = await makeAccount({ name: "Caja" });
+    const banco = await makeAccount({ name: "Banco" });
+    // Transfer 10000 cents from Caja → Banco.
+    await makeMovement(caja.id, { type: "TRANSFERENCIA", amount: 10000, toAccountId: banco.id });
+
+    const accounts = await getAccountsWithBalance();
+    const byName = Object.fromEntries(accounts.map((x) => [x.name, x.balance]));
+    expect(byName.Caja).toBe(-10000); // source debited
+    expect(byName.Banco).toBe(10000); // destination credited
+    expect(byName.Caja + byName.Banco).toBe(0); // total preserved
+  });
+
   it("keeps each account's balance independent", async () => {
     const a = await makeAccount({ name: "A" });
     const b = await makeAccount({ name: "B" });

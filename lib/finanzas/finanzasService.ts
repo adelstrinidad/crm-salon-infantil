@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { AccountFormInput, MovementFormValues } from "./schema";
-import { computeBalance, summarizeGroupedByType } from "./balance";
+import { computeAccountBalance, summarizeGroupedByType } from "./balance";
 
 // ── Accounts ──────────────────────────────────────────────────────────────────
 
@@ -99,8 +99,13 @@ export async function getMovementsByEvent(eventId: string) {
 export async function getAccountsWithBalance() {
   const accounts = await prisma.account.findMany({
     orderBy: { name: "asc" },
-    include: { movements: true },
+    // `movements` = outbound (this account as source); `inbound` = transfers
+    // received (this account as toAccountId). Both feed the balance.
+    include: { movements: true, inbound: true },
   });
 
-  return accounts.map((acc) => ({ ...acc, balance: computeBalance(acc.movements) }));
+  return accounts.map((acc) => ({
+    ...acc,
+    balance: computeAccountBalance(acc.movements, acc.inbound),
+  }));
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computeBalance,
+  computeAccountBalance,
   summarizeMovements,
   summarizeGroupedByType,
   type SignedMovement,
@@ -31,11 +32,35 @@ describe("computeBalance", () => {
     expect(computeBalance([{ type: "EGRESO", amount: 5000 }])).toBe(-5000);
   });
 
-  // Documents CURRENT behavior — a transfer only DEBITS the source account;
-  // the matching credit to toAccountId is not modeled in the balance. If this
-  // is wrong for the business, fix computeBalance + getAccountsWithBalance.
-  it("treats TRANSFERENCIA as an outflow only (known limitation)", () => {
+  // computeBalance only sees OUTBOUND rows, so a transfer debits the source
+  // here. The destination credit is added by computeAccountBalance (below).
+  it("debits the source account for an outbound TRANSFERENCIA", () => {
     expect(computeBalance([{ type: "TRANSFERENCIA", amount: 7000 }])).toBe(-7000);
+  });
+});
+
+describe("computeAccountBalance", () => {
+  it("equals computeBalance when there are no inbound transfers", () => {
+    const outbound: SignedMovement[] = [
+      { type: "INGRESO", amount: 10000 },
+      { type: "EGRESO", amount: 3000 },
+    ];
+    expect(computeAccountBalance(outbound, [])).toBe(7000);
+  });
+
+  it("credits the destination account for inbound transfers", () => {
+    // Account received two transfers, no outbound activity.
+    expect(computeAccountBalance([], [{ amount: 4000 }, { amount: 1000 }])).toBe(5000);
+  });
+
+  it("makes a transfer money-neutral across the two accounts", () => {
+    // Source: one outbound TRANSFERENCIA of 7000 → -7000.
+    const source = computeAccountBalance([{ type: "TRANSFERENCIA", amount: 7000 }], []);
+    // Destination: same transfer arrives as inbound → +7000.
+    const dest = computeAccountBalance([], [{ amount: 7000 }]);
+    expect(source).toBe(-7000);
+    expect(dest).toBe(7000);
+    expect(source + dest).toBe(0); // total preserved
   });
 });
 
