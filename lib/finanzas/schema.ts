@@ -30,6 +30,22 @@ export const MOVEMENT_SIGN: Record<MovementType, 1 | -1> = {
   TRANSFERENCIA: -1,
 };
 
+// How a movement is classified in income/expense (P&L) summaries — SEPARATE
+// from its balance effect (MOVEMENT_SIGN above). A TRANSFERENCIA is an internal
+// move between two own accounts and ARQUEO is a cash-count reconciliation;
+// neither is real business income or expense, so both are "neutral" and excluded
+// from ingreso/egreso totals (counting them double-counts transfers as expense
+// and inflates income with reconciliations). They still move the account balance.
+export type MovementFlow = "income" | "expense" | "neutral";
+export const MOVEMENT_FLOW: Record<MovementType, MovementFlow> = {
+  INGRESO: "income",
+  EGRESO: "expense",
+  INVERSION: "expense",
+  RETIRO: "expense",
+  TRANSFERENCIA: "neutral",
+  ARQUEO: "neutral",
+};
+
 export const accountFormInputSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
   description: z.string().optional(),

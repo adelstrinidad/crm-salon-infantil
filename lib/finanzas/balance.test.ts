@@ -64,32 +64,61 @@ describe("computeAccountBalance", () => {
   });
 });
 
+// The income/expense split classifies by MOVEMENT_FLOW, NOT by balance sign:
+// INGRESO is income; EGRESO/INVERSION/RETIRO are expense; TRANSFERENCIA (internal
+// move) and ARQUEO (cash-count reconciliation) are neutral and excluded.
 describe("summarizeMovements", () => {
   it("returns all zeros for no movements", () => {
     expect(summarizeMovements([])).toEqual({ totalIngreso: 0, totalEgreso: 0, net: 0 });
   });
 
-  it("splits by sign and reports egreso as a positive magnitude", () => {
+  it("counts INGRESO as income and EGRESO/INVERSION/RETIRO as expense", () => {
     const result = summarizeMovements([
       { type: "INGRESO", amount: 10000 },
-      { type: "ARQUEO", amount: 2000 },
       { type: "EGRESO", amount: 3000 },
+      { type: "INVERSION", amount: 2000 },
       { type: "RETIRO", amount: 1000 },
     ]);
-    expect(result.totalIngreso).toBe(12000);
-    expect(result.totalEgreso).toBe(4000);
-    expect(result.net).toBe(8000); // 12000 - 4000
+    expect(result.totalIngreso).toBe(10000);
+    expect(result.totalEgreso).toBe(6000); // 3000 + 2000 + 1000
+    expect(result.net).toBe(4000); // 10000 - 6000
+  });
+
+  // Regression for #7: a TRANSFERENCIA is an internal move and ARQUEO a
+  // reconciliation — neither must land in the P&L totals.
+  it("excludes TRANSFERENCIA and ARQUEO from income/expense totals", () => {
+    const result = summarizeMovements([
+      { type: "INGRESO", amount: 10000 },
+      { type: "EGRESO", amount: 3000 },
+      { type: "TRANSFERENCIA", amount: 7000 }, // internal — must not inflate egreso
+      { type: "ARQUEO", amount: 2000 }, // reconciliation — must not inflate ingreso
+    ]);
+    expect(result.totalIngreso).toBe(10000);
+    expect(result.totalEgreso).toBe(3000);
+    expect(result.net).toBe(7000);
   });
 });
 
 describe("summarizeGroupedByType", () => {
-  it("splits a pre-aggregated groupBy result by sign", () => {
+  it("classifies a pre-aggregated groupBy result by flow", () => {
+    const result = summarizeGroupedByType([
+      { type: "INGRESO", sum: 15000 },
+      { type: "EGRESO", sum: 5000 },
+      { type: "INVERSION", sum: 1000 },
+    ]);
+    expect(result.totalIngreso).toBe(15000);
+    expect(result.totalEgreso).toBe(6000); // EGRESO + INVERSION
+  });
+
+  // Regression for #7: neutral types excluded from the grouped split too.
+  it("excludes TRANSFERENCIA and ARQUEO from the grouped split", () => {
     const result = summarizeGroupedByType([
       { type: "INGRESO", sum: 15000 },
       { type: "EGRESO", sum: 5000 },
       { type: "TRANSFERENCIA", sum: 2000 },
+      { type: "ARQUEO", sum: 800 },
     ]);
-    expect(result.totalIngreso).toBe(15000);
-    expect(result.totalEgreso).toBe(7000); // EGRESO + TRANSFERENCIA
+    expect(result.totalIngreso).toBe(15000); // ARQUEO excluded
+    expect(result.totalEgreso).toBe(5000); // TRANSFERENCIA excluded
   });
 });

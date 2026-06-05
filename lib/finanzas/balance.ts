@@ -3,7 +3,7 @@
 //
 // The service functions (getAccountsWithBalance, listMovementsFiltered,
 // reports.getMovementSummary) call these; they do the DB I/O, these do the math.
-import { MOVEMENT_SIGN, type MovementType } from "./schema";
+import { MOVEMENT_SIGN, MOVEMENT_FLOW, type MovementType } from "./schema";
 
 // Minimal shape we need off a movement — keeps these helpers decoupled from
 // the full Prisma row so tests can pass plain objects.
@@ -39,31 +39,35 @@ export type MovementTotals = {
   net: number;
 };
 
-// Split a set of movements into positive (ingreso) and negative (egreso)
-// totals by sign. `totalEgreso` is reported as a positive magnitude; `net` is
-// ingreso minus egreso. Used by the movements list summary and reports.
+// Split a set of movements into ingreso (income) and egreso (expense) totals by
+// MOVEMENT_FLOW. `totalEgreso` is reported as a positive magnitude; `net` is
+// ingreso minus egreso. "neutral" types (TRANSFERENCIA, ARQUEO) are excluded —
+// they move balance but aren't real income/expense. Used by the movements list
+// summary and reports.
 export function summarizeMovements(movements: SignedMovement[]): MovementTotals {
   let totalIngreso = 0;
   let totalEgreso = 0;
   for (const m of movements) {
-    const sign = MOVEMENT_SIGN[m.type as MovementType];
-    if (sign > 0) totalIngreso += m.amount;
-    else totalEgreso += m.amount;
+    const flow = MOVEMENT_FLOW[m.type as MovementType];
+    if (flow === "income") totalIngreso += m.amount;
+    else if (flow === "expense") totalEgreso += m.amount;
+    // "neutral" (internal transfers, cash-count arqueo) excluded from P&L totals
   }
   return { totalIngreso, totalEgreso, net: totalIngreso - totalEgreso };
 }
 
 // Same split but from a pre-aggregated groupBy result (type → summed amount),
 // as Prisma returns from movement.groupBy. Avoids re-loading every row.
+// Classifies by MOVEMENT_FLOW; "neutral" types are excluded (see summarizeMovements).
 export function summarizeGroupedByType(
   groups: { type: MovementType | string; sum: number }[]
 ): { totalIngreso: number; totalEgreso: number } {
   let totalIngreso = 0;
   let totalEgreso = 0;
   for (const g of groups) {
-    const sign = MOVEMENT_SIGN[g.type as MovementType];
-    if (sign > 0) totalIngreso += g.sum;
-    else totalEgreso += g.sum;
+    const flow = MOVEMENT_FLOW[g.type as MovementType];
+    if (flow === "income") totalIngreso += g.sum;
+    else if (flow === "expense") totalEgreso += g.sum;
   }
   return { totalIngreso, totalEgreso };
 }
