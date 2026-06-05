@@ -1,0 +1,23 @@
+#!/bin/sh
+# Pre-push quality gate — enforces Constitution §4.1 (Definition of Done).
+# Runs the full test suite (unit + integration) before any push is allowed.
+# A push with failing or skipped tests is rejected. NEVER bypass with
+# --no-verify (see coding-standards.md / CLAUDE.md).
+#
+# Activated via core.hooksPath, set by the package.json "prepare" script on
+# `npm install`. To activate manually: git config core.hooksPath .githooks
+
+echo "pre-push: running npm test (unit + integration)…"
+
+npm test
+status=$?
+
+if [ $status -ne 0 ]; then
+  echo ""
+  echo "✖ pre-push blocked: tests failed. Fix them before pushing."
+  echo "  (Do NOT use --no-verify — see Constitution §4.1.)"
+  exit 1
+fi
+
+echo "✔ pre-push: all tests passed."
+exit 0

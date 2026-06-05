@@ -105,9 +105,12 @@ lib/                         # Shared logic + types (see backend constitution)
 
 ## VIII. Testing
 
-- **E2E with Playwright** for user flows (create event, record movement). As a QA, lead with these.
+**Tests ship with the feature, before push** — see Constitution §4.1 (Definition of Done).
+
+- **E2E with Playwright** for every new user flow (create event, record movement). As a QA, lead with these.
 - Component tests with Vitest + React Testing Library where a component has real logic.
-- Server-side/domain unit tests live in `lib/` (see backend constitution).
+- Server-side/domain unit + integration tests live in `lib/` and `tests/integration/` (see backend constitution §VIII).
+- `npm test` must pass with pristine output before pushing.
 
 ---
 

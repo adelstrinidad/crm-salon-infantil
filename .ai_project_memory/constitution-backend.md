@@ -128,9 +128,28 @@ Roadmap domains (add later): `invitations/`, `inventory/`, `furniture/`, `sales/
 
 ## VIII. Testing
 
-- **Unit-test `lib/` domain logic with Vitest** — especially the event financial summary calculation (pure function, easy to test). As a QA, this is the highest-value layer to cover.
-- Use a separate SQLite test database (or in-memory) for tests that touch Prisma.
-- E2E (Playwright) covers the full flow — see the frontend constitution.
+**Tests are part of the feature, written before push** — see Constitution §4.1
+(Definition of Done). New calc → unit test; new service/query → integration test.
+
+### Two layers (vitest projects, configured in `vitest.config.ts`)
+
+- **`unit`** — pure functions & Zod schemas, no DB. Files: `lib/**/*.test.ts`,
+  `tests/unit/**`. Run `npm run test:unit`. Put the calc helper next to its test
+  (e.g. `lib/finanzas/balance.ts` + `balance.test.ts`). Keep calculations as pure
+  functions so they're unit-testable apart from Prisma — extract math out of
+  service functions rather than burying it in a DB query.
+- **`integration`** — `lib/*Service.ts` against a real migrated SQLite test DB.
+  Files: `tests/integration/**`. Run `npm run test:integration`.
+  - Harness: `tests/integration/setup/globalSetup.ts` provisions a fresh
+    `prisma/test.db` via `prisma migrate deploy` (also smoke-tests migrations);
+    the integration project sets `DATABASE_URL=file:./prisma/test.db` — **never** dev.db.
+  - `tests/integration/setup/db.ts` exports `resetDb()` (FK-safe truncation, call
+    in `beforeEach`) and row factories (`makeAccount`, `makeEvent`, …, money in cents).
+  - Watch timezones: `new Date("2026-06-01")` is UTC midnight and can fall *before*
+    a local-time range start (GMT-3) — give dates a mid-day time in range-filter tests.
+
+- `npm test` runs both projects; output MUST be pristine before pushing.
+- **E2E (Playwright)** covers full user flows — see the frontend constitution.
 
 ---
 

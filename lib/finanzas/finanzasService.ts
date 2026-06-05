@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { AccountFormInput, MovementFormValues } from "./schema";
-import { MOVEMENT_SIGN } from "./schema";
+import { computeAccountBalance, summarizeGroupedByType } from "./balance";
 
 // ── Accounts ──────────────────────────────────────────────────────────────────
 
@@ -63,14 +63,9 @@ export async function listMovementsFiltered(opts: {
     prisma.movement.groupBy({ by: ["type"], where, _sum: { amount: true } }),
   ]);
 
-  let totalIngreso = 0;
-  let totalEgreso = 0;
-  for (const g of byType) {
-    const sign = MOVEMENT_SIGN[g.type as keyof typeof MOVEMENT_SIGN];
-    const sum = g._sum.amount ?? 0;
-    if (sign > 0) totalIngreso += sum;
-    else totalEgreso += sum;
-  }
+  const { totalIngreso, totalEgreso } = summarizeGroupedByType(
+    byType.map((g) => ({ type: g.type, sum: g._sum.amount ?? 0 }))
+  );
 
   return { rows, total, totalIngreso, totalEgreso };
 }
@@ -104,14 +99,13 @@ export async function getMovementsByEvent(eventId: string) {
 export async function getAccountsWithBalance() {
   const accounts = await prisma.account.findMany({
     orderBy: { name: "asc" },
-    include: { movements: true },
+    // `movements` = outbound (this account as source); `inbound` = transfers
+    // received (this account as toAccountId). Both feed the balance.
+    include: { movements: true, inbound: true },
   });
 
-  return accounts.map((acc) => {
-    const balance = acc.movements.reduce(
-      (sum, m) => sum + m.amount * MOVEMENT_SIGN[m.type as keyof typeof MOVEMENT_SIGN],
-      0
-    );
-    return { ...acc, balance };
-  });
+  return accounts.map((acc) => ({
+    ...acc,
+    balance: computeAccountBalance(acc.movements, acc.inbound),
+  }));
 }
