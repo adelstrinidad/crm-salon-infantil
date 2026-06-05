@@ -89,16 +89,18 @@ describe("getAccountsWithBalance", () => {
 });
 
 describe("listMovementsFiltered", () => {
-  it("aggregates ingreso/egreso over the full filtered set", async () => {
+  it("aggregates ingreso/egreso over the full filtered set, excluding transfers", async () => {
     const acc = await makeAccount();
     await makeMovement(acc.id, { type: "INGRESO", amount: 80000 });
     await makeMovement(acc.id, { type: "EGRESO", amount: 25000 });
+    // TRANSFERENCIA is an internal move — counted in `total` but NOT in the
+    // income/expense totals (regression for #7).
     await makeMovement(acc.id, { type: "TRANSFERENCIA", amount: 5000 });
 
     const { total, totalIngreso, totalEgreso } = await listMovementsFiltered({});
-    expect(total).toBe(3);
+    expect(total).toBe(3); // row count includes the transfer
     expect(totalIngreso).toBe(80000);
-    expect(totalEgreso).toBe(30000); // EGRESO + TRANSFERENCIA
+    expect(totalEgreso).toBe(25000); // EGRESO only — TRANSFERENCIA excluded
   });
 
   it("filters by account", async () => {
