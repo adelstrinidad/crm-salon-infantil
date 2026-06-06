@@ -1,8 +1,48 @@
 import { prisma } from "@/lib/prisma";
 import type { ServiceFormValues } from "./schema";
+import { parseServiceSort } from "./listFilters";
+import type { Prisma } from "@/app/generated/prisma/client";
 
 export async function listServices() {
   return prisma.service.findMany({ orderBy: { name: "asc" }, include: { proveedor: true } });
+}
+
+// Filtered + sorted + paginated list for the services table. Builds a Prisma
+// `where` from optional filters (text search, proveedor) and an `orderBy` from a
+// validated sort string. Returns the page rows plus the total matching count so
+// the pager stays correct.
+export async function listServicesFiltered(opts: {
+  q?: string;
+  proveedorId?: string;
+  sort?: string;
+  skip: number;
+  take: number;
+}) {
+  const where: Prisma.ServiceWhereInput = {
+    ...(opts.q
+      ? {
+          OR: [
+            { name: { contains: opts.q } },
+            { description: { contains: opts.q } },
+          ],
+        }
+      : {}),
+    ...(opts.proveedorId ? { proveedorId: opts.proveedorId } : {}),
+  };
+
+  const { field, dir } = parseServiceSort(opts.sort);
+
+  const [rows, total] = await Promise.all([
+    prisma.service.findMany({
+      where,
+      include: { proveedor: true },
+      orderBy: { [field]: dir },
+      skip: opts.skip,
+      take: opts.take,
+    }),
+    prisma.service.count({ where }),
+  ]);
+  return { rows, total };
 }
 
 export async function getService(id: string) {
