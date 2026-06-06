@@ -1,18 +1,57 @@
 import Link from "next/link";
-import { Plus, Sparkles } from "lucide-react";
-import { listServices } from "@/lib/services/serviceService";
-import { buttonVariants } from "@/components/ui/button";
+import { Plus, Sparkles, Search } from "lucide-react";
+import { listServicesFiltered } from "@/lib/services/serviceService";
+import { listProveedores } from "@/lib/proveedores/proveedorService";
+import { buttonVariants, Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { SelectFilter } from "@/components/ui/select-filter";
+import { SortSelect } from "@/components/ui/sort-select";
+import { Pager } from "@/components/ui/pager";
+import { parsePage, buildPaginated } from "@/lib/pagination";
+import { SERVICE_SORT_OPTIONS, DEFAULT_SERVICE_SORT } from "@/lib/services/listFilters";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
 import { DeleteServiceButton } from "./DeleteServiceButton";
 
-export default async function ServiciosPage() {
-  const services = await listServices();
+type Props = {
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    proveedorId?: string;
+    sort?: string;
+  }>;
+};
+
+export default async function ServiciosPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const pageParams = parsePage(params.page, 15);
+  const sort = params.sort || DEFAULT_SERVICE_SORT;
+
+  const [{ rows, total }, proveedores] = await Promise.all([
+    listServicesFiltered({
+      q: params.q || undefined,
+      proveedorId: params.proveedorId || undefined,
+      sort,
+      skip: pageParams.skip,
+      take: pageParams.take,
+    }),
+    listProveedores(),
+  ]);
+  const { rows: services, page, pageCount } = buildPaginated(rows, total, pageParams);
+
+  // Filters that should be preserved across pager links.
+  const filterQuery = {
+    q: params.q,
+    proveedorId: params.proveedorId,
+    sort: params.sort,
+  };
+  const hasFilters = Boolean(params.q || params.proveedorId);
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Servicios"
         action={
@@ -23,56 +62,149 @@ export default async function ServiciosPage() {
         }
       />
 
+      {/* Filters + sort */}
+      <Card className="p-4">
+        <form method="GET" className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1 w-full sm:w-56">
+            <label className="text-sm font-medium">Buscar</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                name="q"
+                defaultValue={params.q ?? ""}
+                placeholder="Nombre o descripción…"
+                className="pl-9"
+              />
+            </div>
+          </div>
+          <div className="space-y-1 w-full sm:w-44">
+            <label className="text-sm font-medium">Proveedor</label>
+            <SelectFilter
+              name="proveedorId"
+              defaultValue={params.proveedorId ?? ""}
+              allLabel="Todos"
+              options={proveedores.map((p) => ({ value: p.id, label: p.name }))}
+            />
+          </div>
+          <div className="space-y-1 w-full sm:w-52">
+            <label className="text-sm font-medium">Ordenar por</label>
+            <SortSelect name="sort" defaultValue={sort} options={SERVICE_SORT_OPTIONS} />
+          </div>
+          <Button type="submit">Filtrar</Button>
+          <Link href="/servicios" className={cn(buttonVariants({ variant: "outline" }))}>
+            Limpiar
+          </Link>
+        </form>
+      </Card>
+
       {services.length === 0 ? (
         <EmptyState
           icon={Sparkles}
-          title="Todavía no hay servicios"
-          description="Cargá los servicios de tu catálogo (salón, torta, animación…) con su costo y precio."
+          title={hasFilters ? "Sin resultados" : "Todavía no hay servicios"}
+          description={
+            hasFilters
+              ? "Ningún servicio coincide con los filtros. Probá ajustarlos o limpiarlos."
+              : "Cargá los servicios de tu catálogo (salón, torta, animación…) con su costo y precio."
+          }
           action={
-            <Link href="/servicios/nuevo" className={cn(buttonVariants())}>
-              <Plus className="size-4" />
-              Nuevo servicio
-            </Link>
+            hasFilters ? (
+              <Link href="/servicios" className={cn(buttonVariants({ variant: "outline" }))}>
+                Limpiar filtros
+              </Link>
+            ) : (
+              <Link href="/servicios/nuevo" className={cn(buttonVariants())}>
+                <Plus className="size-4" />
+                Nuevo servicio
+              </Link>
+            )
           }
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
-              <tr>
-                <th className="px-4 py-3 text-left">Nombre</th>
-                <th className="px-4 py-3 text-left">Descripción</th>
-                <th className="px-4 py-3 text-left">Proveedor</th>
-                <th className="px-4 py-3 text-left">Costo</th>
-                <th className="px-4 py-3 text-left">Precio</th>
-                <th className="px-4 py-3 text-left">Ganancia</th>
-                <th className="px-4 py-3 text-left">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {services.map((s) => (
-                <tr key={s.id} className="hover:bg-muted/40 transition-colors">
-                  <td className="px-4 py-3 font-medium">{s.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs max-w-[200px] truncate">{s.description ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.proveedor?.name ?? "—"}</td>
-                  <td className="px-4 py-3">{formatMoney(s.cost)}</td>
-                  <td className="px-4 py-3">{formatMoney(s.price)}</td>
-                  <td className="px-4 py-3">{formatMoney(s.price - s.cost)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/servicios/${s.id}/editar`}
-                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                      >
-                        Editar
-                      </Link>
-                      <DeleteServiceButton id={s.id} />
-                    </div>
-                  </td>
+        <>
+          {/* Desktop: table */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">Nombre</th>
+                  <th className="px-4 py-3 text-left font-medium">Descripción</th>
+                  <th className="px-4 py-3 text-left font-medium">Proveedor</th>
+                  <th className="px-4 py-3 text-left font-medium">Costo</th>
+                  <th className="px-4 py-3 text-left font-medium">Precio</th>
+                  <th className="px-4 py-3 text-left font-medium">Ganancia</th>
+                  <th className="px-4 py-3 text-right font-medium">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {services.map((s) => (
+                  <tr key={s.id} className="hover:bg-muted/40 transition-colors">
+                    <td className="px-4 py-3 font-medium">{s.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs max-w-[200px] truncate">
+                      {s.description ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{s.proveedor?.name ?? "—"}</td>
+                    <td className="px-4 py-3">{formatMoney(s.cost)}</td>
+                    <td className="px-4 py-3">{formatMoney(s.price)}</td>
+                    <td className="px-4 py-3">{formatMoney(s.price - s.cost)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/servicios/${s.id}/editar`}
+                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                        >
+                          Editar
+                        </Link>
+                        <DeleteServiceButton id={s.id} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: cards */}
+          <ul className="md:hidden space-y-3">
+            {services.map((s) => (
+              <li key={s.id} className="rounded-xl border border-border bg-card shadow-sm">
+                <div className="p-4">
+                  <p className="font-medium truncate">{s.name}</p>
+                  {s.description && (
+                    <p className="mt-0.5 text-sm text-muted-foreground truncate">{s.description}</p>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {s.proveedor?.name ?? "Sin proveedor"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                    <span className="text-muted-foreground">Costo {formatMoney(s.cost)}</span>
+                    <span className="text-muted-foreground">Precio {formatMoney(s.price)}</span>
+                    <span className="font-medium">Ganancia {formatMoney(s.price - s.cost)}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 border-t border-border/60 px-4 py-2.5">
+                  <Link
+                    href={`/servicios/${s.id}/editar`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    Editar
+                  </Link>
+                  <DeleteServiceButton id={s.id} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {total > 0 && (
+        <div className="mt-4">
+          <Pager
+            page={page}
+            pageCount={pageCount}
+            total={total}
+            basePath="/servicios"
+            query={filterQuery}
+          />
         </div>
       )}
     </div>

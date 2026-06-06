@@ -33,14 +33,49 @@ export function makeAccount(overrides: Partial<{ name: string; description: stri
   });
 }
 
-export function makeProveedor(overrides: Partial<{ name: string }> = {}) {
+export function makeEventType(overrides: Partial<{ name: string }> = {}) {
+  // name is unique, so the default generates a distinct value per call.
+  return prisma.eventType.create({
+    data: { name: `Tipo ${uniq()}`, ...overrides },
+  });
+}
+
+export function makeClient(
+  overrides: Partial<{
+    name: string;
+    dni: string;
+    phone: string;
+    email: string;
+    address: string;
+    notes: string;
+  }> = {}
+) {
+  return prisma.client.create({
+    data: { name: `Cliente ${uniq()}`, ...overrides },
+  });
+}
+
+export function makeProveedor(
+  overrides: Partial<{
+    name: string;
+    description: string;
+    phone: string;
+    email: string;
+  }> = {}
+) {
   return prisma.proveedor.create({
     data: { name: `Proveedor ${uniq()}`, ...overrides },
   });
 }
 
 export function makeService(
-  overrides: Partial<{ name: string; cost: number; price: number; proveedorId: string }> = {}
+  overrides: Partial<{
+    name: string;
+    description: string;
+    cost: number;
+    price: number;
+    proveedorId: string;
+  }> = {}
 ) {
   return prisma.service.create({
     data: { name: `Servicio ${uniq()}`, cost: 0, price: 0, ...overrides },
