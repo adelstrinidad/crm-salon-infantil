@@ -6,7 +6,15 @@
 import { staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
 
 export type ServiceLineInput = { qty: number; service: { cost: number; price: number } };
-export type ProviderLineInput = { provider: { cost: number } };
+// A provider line carries an explicit per-event cost in cents (never null —
+// snapshotted from the catalog on assign, overridable per event).
+export type ProviderLineInput = { cost: number };
+
+// The cost charged for this provider on this event. Always the explicit
+// per-event cost. Kept as a named accessor so callers read intent, not a field.
+export function effectiveProviderCost(line: ProviderLineInput): number {
+  return line.cost;
+}
 export type BonificadoLineInput = { qty: number; service: { price: number } };
 // Internal hourly staff: a venue cost (never billed to the client). The line
 // carries estimated + actual minutes; cost uses the real hours once logged.
@@ -37,7 +45,7 @@ export type EventFinancials = {
 export function computeEventFinancials(lines: EventLines): EventFinancials {
   const servicePrice = lines.services.reduce((s, l) => s + l.service.price * l.qty, 0);
   const serviceCost = lines.services.reduce((s, l) => s + l.service.cost * l.qty, 0);
-  const providerCost = lines.providers.reduce((s, l) => s + l.provider.cost, 0);
+  const providerCost = lines.providers.reduce((s, l) => s + effectiveProviderCost(l), 0);
   // Staff hours are a venue cost only: they raise totalCost / lower profit but
   // never touch servicePrice or subtotal (the client doesn't pay for them).
   const staffCost = (lines.staff ?? []).reduce(

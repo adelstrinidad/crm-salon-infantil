@@ -12,7 +12,7 @@ import { EventBonificadoPicker } from "@/components/eventos/EventBonificadoPicke
 import { EventStaffPicker } from "@/components/eventos/EventStaffPicker";
 import { updateEventAction } from "../../actions";
 import { computeEventFinancials } from "@/lib/events/financials";
-import { centsToPesos, formatMoney } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import type { EventFormInput, EventState } from "@/lib/events/schema";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionTitle } from "@/components/ui/section-title";
@@ -53,7 +53,6 @@ export default async function EditarEventoPage({ params }: Props) {
     state: event.state as EventState,
     details: event.details ?? "",
     notes: event.notes ?? "",
-    totalPrice: String(centsToPesos(event.totalPrice)),
   };
 
   async function handleSubmit(data: EventFormInput) {

@@ -7,6 +7,8 @@ import { eventSchema, eventFormInputSchema, EventState } from "./schema";
 // As QA, these cover: required fields, boundary values, type coercion, enum coverage.
 
 // All fields as strings — exactly what the form sends.
+// NOTE: no totalPrice — the price is derived from service lines, never sent by
+// the form (see recomputeEventTotalPrice in lib/events/eventService.ts).
 const validFormInput = {
   name: "Cumpleaños de Sofía",
   eventType: "Cumpleaños",
@@ -14,7 +16,6 @@ const validFormInput = {
   startAt: "2026-06-01T15:00",
   endAt: "2026-06-01T18:00",
   state: EventState.PRESUPUESTADO,
-  totalPrice: "15000",
 };
 
 describe("eventFormInputSchema (client-side validation)", () => {
@@ -49,20 +50,11 @@ describe("eventSchema (server-side transform)", () => {
     }
   });
 
-  it("transforms string price (pesos) to integer cents", () => {
+  it("does not include a totalPrice field (price is derived, not form input)", () => {
     const result = eventSchema.safeParse(validFormInput);
     expect(result.success).toBe(true);
     if (result.success) {
-      // "15000" pesos → 1_500_000 cents
-      expect(result.data.totalPrice).toBe(1_500_000);
-    }
-  });
-
-  it("defaults totalPrice to 0 when '0' string is passed", () => {
-    const result = eventSchema.safeParse({ ...validFormInput, totalPrice: "0" });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.totalPrice).toBe(0);
+      expect("totalPrice" in result.data).toBe(false);
     }
   });
 

@@ -78,7 +78,8 @@ describe("getEventGroupedByType", () => {
     const bonifService = await makeService({ price: 150 });
     const provider = await makeProvider({ cost: 400 });
     await prisma.eventService.create({ data: { eventId: event.id, serviceId: service.id, qty: 1 } });
-    await prisma.eventProvider.create({ data: { eventId: event.id, providerId: provider.id } });
+    // Per-event provider cost is explicit; snapshot the catalog cost (400).
+    await prisma.eventProvider.create({ data: { eventId: event.id, providerId: provider.id, cost: provider.cost } });
     await prisma.eventBonificado.create({
       data: { eventId: event.id, serviceId: bonifService.id, qty: 2 },
     });

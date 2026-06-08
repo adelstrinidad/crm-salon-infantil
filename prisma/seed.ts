@@ -1,6 +1,7 @@
 import path from "path";
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { computeEventFinancials } from "../lib/events/financials";
 
 const dbUrl = `file:${path.resolve("dev.db")}`;
 const adapter = new PrismaLibSql({ url: dbUrl });
@@ -122,7 +123,6 @@ async function main() {
         startAt: day(7, 15),
         endAt: day(7, 18),
         state: "RESERVADO",
-        totalPrice: 7000000,
         services: {
           create: [
             { serviceId: services["Salón (3 hs)"], qty: 1 },
@@ -152,7 +152,6 @@ async function main() {
         startAt: day(14, 17),
         endAt: day(14, 20),
         state: "PRESUPUESTADO",
-        totalPrice: 5500000,
         services: {
           create: [
             { serviceId: services["Salón (3 hs)"], qty: 1 },
@@ -171,7 +170,6 @@ async function main() {
         startAt: day(-7, 16),
         endAt: day(-7, 19),
         state: "PAGADO",
-        totalPrice: 8500000,
         services: {
           create: [
             { serviceId: services["Salón (3 hs)"], qty: 1 },
@@ -191,6 +189,26 @@ async function main() {
         },
       },
     });
+  }
+
+  // Price is never set by hand — derive each event's totalPrice from its service
+  // lines minus bonificados, mirroring recomputeEventTotalPrice() in the app.
+  const allEvents = await prisma.event.findMany({
+    include: {
+      services: { include: { service: true } },
+      bonificados: { include: { service: true } },
+    },
+  });
+  for (const event of allEvents) {
+    const { subtotal } = computeEventFinancials({
+      services: event.services,
+      providers: [],
+      bonificados: event.bonificados,
+      staff: [],
+    });
+    if (subtotal !== event.totalPrice) {
+      await prisma.event.update({ where: { id: event.id }, data: { totalPrice: subtotal } });
+    }
   }
 
   console.log("Seed complete.");

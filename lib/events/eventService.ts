@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import type { EventFormValues, EventState } from "./schema";
 import { parseEventSort } from "./listFilters";
+import { computeEventFinancials } from "./financials";
 import type { Prisma } from "@/app/generated/prisma/client";
 
 export async function listEvents() {
@@ -90,6 +91,29 @@ export async function updateEvent(id: string, data: EventFormValues) {
 
 export async function deleteEvent(id: string) {
   return prisma.event.delete({ where: { id } });
+}
+
+// The event price is never entered by hand — it is the subtotal derived from the
+// event's service lines minus its complimentary (bonificado) lines. Providers and
+// staff are venue costs and never raise the price, so they are excluded here.
+// Call this after any change to an event's services or bonificados to keep the
+// stored totalPrice in sync (it backs Cobrado/Saldo, payment state, and reports).
+export async function recomputeEventTotalPrice(eventId: string): Promise<number> {
+  const lines = await prisma.event.findUniqueOrThrow({
+    where: { id: eventId },
+    include: {
+      services: { include: { service: true } },
+      bonificados: { include: { service: true } },
+    },
+  });
+  const { subtotal } = computeEventFinancials({
+    services: lines.services,
+    providers: [],
+    bonificados: lines.bonificados,
+    staff: [],
+  });
+  await prisma.event.update({ where: { id: eventId }, data: { totalPrice: subtotal } });
+  return subtotal;
 }
 
 export async function setEventState(id: string, state: EventState) {
