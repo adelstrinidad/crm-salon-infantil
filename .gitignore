@@ -64,3 +64,6 @@ prisma/test.db
 prisma/test.db-journal
 prisma/test.db-wal
 prisma/test.db-shm
+
+# Playwright auth sessions
+.auth/

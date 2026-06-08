@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { StorageStatePaths } from "./e2e/enums/util/storage";
 
-// E2E config. Reuses a running dev server on :3000 if present, otherwise starts one.
+// E2E config. Reuses a running dev server on :3000 if present, otherwise starts
+// one. Tests run serially (workers:1) against the stateful dev.db — specs use
+// Faker + unique time slots to stay isolated across runs.
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -14,7 +17,16 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // Logs in once and saves the admin session.
+    { name: "setup", testMatch: "tests/auth.setup.ts" },
+
+    // POM suite — authenticated via stored session.
+    {
+      name: "e2e",
+      testMatch: "tests/**/*.spec.ts",
+      use: { ...devices["Desktop Chrome"], storageState: StorageStatePaths.ADMIN },
+      dependencies: ["setup"],
+    },
   ],
   webServer: {
     command: "npm run dev",

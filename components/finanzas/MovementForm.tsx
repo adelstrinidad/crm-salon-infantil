@@ -66,7 +66,7 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
               value={watchType ?? ""}
               onValueChange={(v) => setValue("type", v as MovementFormInput["type"], { shouldValidate: true })}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Tipo">
                 <SelectValue placeholder="Seleccionar…" />
               </SelectTrigger>
               <SelectContent>
@@ -94,7 +94,7 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
               value={watch("accountId") ?? ""}
               onValueChange={(v) => setValue("accountId", v as string, { shouldValidate: true })}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Cuenta origen">
                 <SelectValue placeholder="Seleccionar…" />
               </SelectTrigger>
               <SelectContent>
@@ -114,7 +114,7 @@ export function MovementForm({ onSubmit, accounts, defaultValues, submitLabel, c
                 value={watch("toAccountId") ?? ""}
                 onValueChange={(v) => setValue("toAccountId", v as string, { shouldValidate: true })}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" aria-label="Cuenta destino">
                   <SelectValue placeholder="Seleccionar…" />
                 </SelectTrigger>
                 <SelectContent>

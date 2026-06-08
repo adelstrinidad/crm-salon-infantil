@@ -211,7 +211,7 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
                 setPendingCost(picked ? String(centsToPesos(picked.cost)) : "");
               }}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Agregar prestador">
                 <SelectValue placeholder="Seleccionar…" />
               </SelectTrigger>
               <SelectContent>
@@ -231,6 +231,7 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
               min="0"
               className="w-32"
               placeholder="0"
+              aria-label="Costo prestador"
               value={pendingCost}
               disabled={busy}
               onChange={(e) => setPendingCost(e.target.value)}
@@ -253,6 +254,7 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
                 return res;
               });
             }}
+            aria-label="Agregar prestador"
           >
             Agregar
           </Button>
