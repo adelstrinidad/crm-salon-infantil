@@ -9,6 +9,7 @@ import { EventForm } from "@/components/eventos/EventForm";
 import { EventServicePicker } from "@/components/eventos/EventServicePicker";
 import { EventProviderPicker } from "@/components/eventos/EventProviderPicker";
 import { EventBonificadoPicker } from "@/components/eventos/EventBonificadoPicker";
+import { AutosaveProvider, AutosaveIndicator } from "@/components/eventos/autosave";
 import { EventStaffPicker } from "@/components/eventos/EventStaffPicker";
 import { updateEventAction } from "../../actions";
 import { computeEventFinancials } from "@/lib/events/financials";
@@ -61,20 +62,23 @@ export default async function EditarEventoPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-10 max-w-2xl">
-      <div>
-        <PageHeader title="Editar evento" />
-        <EventForm
-          onSubmit={handleSubmit}
-          defaultValues={defaultValues}
-          submitLabel="Guardar cambios"
-          stickyBar={false}
-          hideActions={true}
-          formId="event-edit-form"
-          eventTypes={allEventTypes}
-          clients={allClients}
-        />
-      </div>
+    <AutosaveProvider>
+      <div className="space-y-10 max-w-2xl">
+        <div>
+          <div className="flex items-center justify-between gap-4">
+            <PageHeader title="Editar evento" />
+            <AutosaveIndicator />
+          </div>
+          <EventForm
+            onSubmit={handleSubmit}
+            defaultValues={defaultValues}
+            stickyBar={false}
+            hideActions={true}
+            autosave={true}
+            eventTypes={allEventTypes}
+            clients={allClients}
+          />
+        </div>
 
       <hr />
 
@@ -118,21 +122,17 @@ export default async function EditarEventoPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="flex gap-3 border-t pt-6">
-        <button
-          type="submit"
-          form="event-edit-form"
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
-        >
-          Guardar cambios
-        </button>
-        <Link
-          href="/eventos"
-          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
-        >
-          Cancelar
-        </Link>
+        {/* No "Guardar" button: every field and picker auto-saves; the header
+            indicator reports the status. This is just a way back to the list. */}
+        <div className="flex gap-3 border-t pt-6">
+          <Link
+            href="/eventos"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+          >
+            Volver a eventos
+          </Link>
+        </div>
       </div>
-    </div>
+    </AutosaveProvider>
   );
 }

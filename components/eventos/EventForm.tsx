@@ -6,7 +6,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import {
@@ -44,6 +44,7 @@ import { statusBadgeLabel } from "@/components/ui/status-badge";
 import { Money } from "@/components/ui/money";
 import { HoursInput } from "@/components/ui/hours-input";
 import { staffLineCost, formatHHMM } from "@/lib/staff/hours";
+import { useAutosave } from "@/components/eventos/autosave";
 
 type ServiceLine = { serviceId: string; qty: number };
 type StaffLine = { staffId: string; estMinutes: number };
@@ -66,6 +67,9 @@ type EventFormProps = {
   submitVariant?: "create" | "edit";
   stickyBar?: boolean;
   hideActions?: boolean;
+  // When true (edit page), header fields auto-save on blur/change and the submit
+  // button is hidden — saving is reported through the AutosaveProvider.
+  autosave?: boolean;
   formId?: string;
   availableServices?: AvailableService[];
   availableProviders?: AvailableProvider[];
@@ -82,6 +86,7 @@ export function EventForm({
   submitVariant = "edit",
   stickyBar = true,
   hideActions = false,
+  autosave = false,
   formId,
   availableServices,
   availableProviders,
@@ -118,6 +123,8 @@ export function EventForm({
     register,
     handleSubmit,
     setValue,
+    getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<EventFormInput>({
     resolver: zodResolver(eventFormInputSchema),
@@ -128,6 +135,46 @@ export function EventForm({
       ...defaultValues,
     },
   });
+
+  // Auto-save (edit page): commit a field when it blurs/changes, but only if the
+  // form is valid and something actually changed since the last save. Reported
+  // through the page-wide AutosaveProvider; create mode gets a no-op context.
+  const { run: autosaveRun } = useAutosave();
+  const lastSavedRef = useRef<string>("");
+  useEffect(() => {
+    // Snapshot the initial values so the first blur on an untouched field is a no-op.
+    lastSavedRef.current = JSON.stringify(getValues());
+  }, [getValues]);
+
+  const commitField = useCallback(() => {
+    if (!autosave) return;
+    void handleSubmit(async (values) => {
+      const serialized = JSON.stringify(values);
+      if (serialized === lastSavedRef.current) return; // nothing changed
+      const result = await autosaveRun(() => onSubmit(values));
+      if (result.ok) {
+        lastSavedRef.current = serialized;
+        setServerError(null);
+      } else {
+        setServerError(result.error ?? "Error al guardar");
+      }
+    })();
+  }, [autosave, handleSubmit, autosaveRun, onSubmit]);
+
+  // Merge RHF registration with the autosave blur commit. Attaching the commit as
+  // a JSX onBlur handler (rather than via register's options) keeps the ref read
+  // commitField performs out of render, satisfying react-hooks/refs.
+  const autosaveField = (name: keyof EventFormInput) => {
+    const reg = register(name);
+    if (!autosave) return reg;
+    return {
+      ...reg,
+      onBlur: (e: React.FocusEvent<HTMLInputElement & HTMLTextAreaElement>) => {
+        void reg.onBlur(e);
+        commitField();
+      },
+    };
+  };
 
   const handleClientCreated = (c: { id: string; name: string }) => {
     setLocalClients((prev) => [...prev, c]);
@@ -215,10 +262,14 @@ export function EventForm({
   const fmt = formatMoney;
 
   return (
-    <form id={formId} onSubmit={buildSubmit()} className={cn("space-y-6 max-w-2xl", stickyBar && "pb-20")}>
+    <form
+      id={formId}
+      onSubmit={autosave ? (e) => e.preventDefault() : buildSubmit()}
+      className={cn("space-y-6 max-w-2xl", stickyBar && "pb-20")}
+    >
       <div className="space-y-1">
         <Label htmlFor="name">Nombre del evento</Label>
-        <Input id="name" {...register("name")} placeholder="Cumpleaños de Sofía" />
+        <Input id="name" {...autosaveField("name")} placeholder="Cumpleaños de Sofía" />
         {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
 
@@ -231,8 +282,11 @@ export function EventForm({
             <div className="w-full">
               <input type="hidden" {...register("eventType")} />
               <Select
-                defaultValue={defaultValues?.eventType ?? ""}
-                onValueChange={(v) => setValue("eventType", (v as string) ?? "", { shouldValidate: true })}
+                value={watch("eventType") ?? ""}
+                onValueChange={(v) => {
+                  setValue("eventType", (v as string) ?? "", { shouldValidate: true });
+                  commitField();
+                }}
               >
                 <SelectTrigger className="w-full" aria-label="Tipo de evento">
                   <SelectValue placeholder="Seleccionar…" />
@@ -281,6 +335,7 @@ export function EventForm({
               setSelectedClientId(id);
               setValue("clientId", id);
               setValue("clientName", name, { shouldValidate: true });
+              commitField();
             }}
           />
           <input type="hidden" {...register("clientName")} />
@@ -293,12 +348,12 @@ export function EventForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="startAt">Inicio</Label>
-          <Input id="startAt" type="datetime-local" {...register("startAt")} />
+          <Input id="startAt" type="datetime-local" {...autosaveField("startAt")} />
           {errors.startAt && <p className="text-sm text-destructive">{errors.startAt.message}</p>}
         </div>
         <div className="space-y-1">
           <Label htmlFor="endAt">Fin</Label>
-          <Input id="endAt" type="datetime-local" {...register("endAt")} />
+          <Input id="endAt" type="datetime-local" {...autosaveField("endAt")} />
           {errors.endAt && <p className="text-sm text-destructive">{errors.endAt.message}</p>}
         </div>
       </div>
@@ -312,8 +367,11 @@ export function EventForm({
             <Label>Estado</Label>
             <Select
               items={Object.fromEntries(Object.values(EventState).map((s) => [s, statusBadgeLabel(s)]))}
-              defaultValue={defaultValues?.state ?? EventState.PRESUPUESTADO}
-              onValueChange={(v) => setValue("state", v as EventState)}
+              value={watch("state") ?? EventState.PRESUPUESTADO}
+              onValueChange={(v) => {
+                setValue("state", v as EventState);
+                commitField();
+              }}
             >
               <SelectTrigger className="w-full" aria-label="Estado">
                 <SelectValue placeholder="Seleccione estado" />
@@ -332,12 +390,12 @@ export function EventForm({
 
       <div className="space-y-1">
         <Label htmlFor="details">Detalles</Label>
-        <Textarea id="details" {...register("details")} rows={8} placeholder="Información del evento…" />
+        <Textarea id="details" {...autosaveField("details")} rows={8} placeholder="Información del evento…" />
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="notes">Notas internas</Label>
-        <Textarea id="notes" {...register("notes")} rows={2} placeholder="Solo visible para el equipo…" />
+        <Textarea id="notes" {...autosaveField("notes")} rows={2} placeholder="Solo visible para el equipo…" />
       </div>
 
       {/* Inline service picker */}
