@@ -15,9 +15,14 @@ import {
 } from "@/lib/events/eventService";
 import { addServiceToEvent } from "@/lib/events/eventServiceLines";
 import { addProviderToEvent } from "@/lib/events/eventProviderLines";
+import { addStaffToEvent } from "@/lib/events/eventStaffLines";
 import { requireSession } from "@/lib/auth/session";
 
-type EventLines = { services: { serviceId: string; qty: number }[]; providerIds: string[] };
+type EventLines = {
+  services: { serviceId: string; qty: number }[];
+  providerIds: string[];
+  staff?: { staffId: string; estMinutes: number }[];
+};
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
 // Hard double-booking guard: a confirmed booking cannot overlap another.
@@ -58,6 +63,11 @@ export async function createEventAction(
   }
   if (lines?.providerIds?.length) {
     await Promise.all(lines.providerIds.map((pid) => addProviderToEvent(event.id, pid)));
+  }
+  if (lines?.staff?.length) {
+    await Promise.all(
+      lines.staff.map((l) => addStaffToEvent(event.id, l.staffId, l.estMinutes || null)),
+    );
   }
   revalidatePath("/eventos");
   return { ok: true, id: event.id };

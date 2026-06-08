@@ -15,6 +15,7 @@ async function fetchEventsWithLines({ from, to, state }: EventFilter) {
       services: { include: { service: true } },
       providers: { include: { provider: true } },
       bonificados: { include: { service: true } },
+      staff: { include: { staff: true } },
     },
     orderBy: { startAt: "asc" },
   });
@@ -29,6 +30,7 @@ export async function getEventGroupedByType(filter: EventFilter) {
     servicePrice: number;
     serviceCost: number;
     providerCost: number;
+    staffCost: number;
     totalBonificado: number;
     subtotal: number;
     totalCost: number;
@@ -43,6 +45,7 @@ export async function getEventGroupedByType(filter: EventFilter) {
       existing.servicePrice += f.servicePrice;
       existing.serviceCost += f.serviceCost;
       existing.providerCost += f.providerCost;
+      existing.staffCost += f.staffCost;
       existing.totalBonificado += f.totalBonificado;
       existing.subtotal += f.subtotal;
       existing.totalCost += f.totalCost;

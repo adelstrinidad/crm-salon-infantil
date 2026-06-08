@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Money, moneyToneClass, signTone } from "@/components/ui/money";
 import { computeEventFinancials } from "@/lib/events/financials";
 import { formatMoney } from "@/lib/money";
+import { formatHHMM, staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
 import { cn } from "@/lib/utils";
 import { RegistrarCobroPanel } from "./RegistrarCobroPanel";
 
@@ -30,8 +31,11 @@ export default async function EventoDetailPage({ params }: Props) {
   ]);
   if (!event) return notFound();
 
-  const { serviceCost, providerCost, totalBonificado, totalCost, profit } =
+  const { serviceCost, providerCost, staffCost, totalBonificado, totalCost, profit } =
     computeEventFinancials(event);
+
+  // "Falta registro de empleados": any assigned staff without real hours logged.
+  const staffPending = event.staff.some((l) => l.actualMinutes == null);
 
   const cobrado = movements
     .filter((m) => m.type === "INGRESO")
@@ -60,8 +64,13 @@ export default async function EventoDetailPage({ params }: Props) {
           <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground">
             {event.name}
           </h1>
-          <div className="mt-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <StatusBadge state={event.state} />
+            {staffPending && (
+              <span className="inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2.5 py-0.5 text-xs font-medium">
+                Falta registro de empleados
+              </span>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -156,6 +165,10 @@ export default async function EventoDetailPage({ params }: Props) {
             <div className="flex justify-between">
               <span className="text-muted-foreground">Costo prestadores</span>
               <span>{fmt(providerCost)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Costo personal</span>
+              <span>{fmt(staffCost)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total bonificado</span>
@@ -273,6 +286,73 @@ export default async function EventoDetailPage({ params }: Props) {
               ))}
             </tbody>
           </table>
+        )}
+      </Card>
+
+      {/* Personal (internal hourly staff) */}
+      <Card className="p-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <SectionTitle className="text-base">Personal</SectionTitle>
+          {staffPending && (
+            <span className="inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2.5 py-0.5 text-xs font-medium">
+              Falta registro de empleados
+            </span>
+          )}
+        </div>
+        {event.staff.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sin personal asignado.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
+                <tr>
+                  <th className="px-3 py-2 text-left">Nombre</th>
+                  <th className="px-3 py-2 text-left">Rol</th>
+                  <th className="px-3 py-2 text-right">Costo/hora</th>
+                  <th className="px-3 py-2 text-right">Estimado</th>
+                  <th className="px-3 py-2 text-right">Real</th>
+                  <th className="px-3 py-2 text-right">Costo</th>
+                  <th className="px-3 py-2 text-left">Pago</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {event.staff.map((l) => {
+                  const minutes = effectiveMinutes(l.estMinutes, l.actualMinutes);
+                  return (
+                    <tr key={l.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="px-3 py-2 font-medium">{l.staff.name}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.staff.role ?? "—"}</td>
+                      <td className="px-3 py-2 text-right">{fmt(l.staff.hourlyRate)}</td>
+                      <td className="px-3 py-2 text-right">
+                        {l.estMinutes != null ? `${formatHHMM(l.estMinutes)} hs` : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {l.actualMinutes != null ? (
+                          `${formatHHMM(l.actualMinutes)} hs`
+                        ) : (
+                          <span className="text-amber-700">Sin registrar</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right font-medium">
+                        {fmt(staffLineCost(l.staff.hourlyRate, minutes))}
+                      </td>
+                      <td className="px-3 py-2">
+                        {l.paid ? (
+                          <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
+                            Pagado {l.paidAt ? new Date(l.paidAt).toLocaleDateString("es-AR") : ""}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2.5 py-0.5 text-xs font-medium">
+                            Pendiente
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
 

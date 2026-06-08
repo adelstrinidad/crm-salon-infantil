@@ -42,12 +42,16 @@ import { AddClientModal } from "@/components/clientes/AddClientModal";
 import { ClientCombobox } from "@/components/clientes/ClientCombobox";
 import { statusBadgeLabel } from "@/components/ui/status-badge";
 import { Money } from "@/components/ui/money";
+import { HoursInput } from "@/components/ui/hours-input";
+import { staffLineCost, formatHHMM } from "@/lib/staff/hours";
 
 type ServiceLine = { serviceId: string; qty: number };
-type EventLines = { services: ServiceLine[]; providerIds: string[] };
+type StaffLine = { staffId: string; estMinutes: number };
+type EventLines = { services: ServiceLine[]; providerIds: string[]; staff: StaffLine[] };
 
 type AvailableService = { id: string; name: string; cost: number; price: number };
 type AvailableProvider = { id: string; name: string; role: string | null; cost: number };
+type AvailableStaff = { id: string; name: string; role: string | null; hourlyRate: number };
 type AvailableEventType = { id: string; name: string };
 type AvailableClient = { id: string; name: string };
 
@@ -65,6 +69,7 @@ type EventFormProps = {
   formId?: string;
   availableServices?: AvailableService[];
   availableProviders?: AvailableProvider[];
+  availableStaff?: AvailableStaff[];
   eventTypes?: AvailableEventType[];
   clients?: AvailableClient[];
   createClient?: (data: ClientFormInput) => Promise<CreateClientResult>;
@@ -80,6 +85,7 @@ export function EventForm({
   formId,
   availableServices,
   availableProviders,
+  availableStaff,
   eventTypes,
   clients,
   createClient,
@@ -95,6 +101,11 @@ export function EventForm({
   // Inline provider picker state
   const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>([]);
   const [pendingProviderId, setPendingProviderId] = useState("");
+
+  // Inline staff picker state (internal hourly employees)
+  const [selectedStaff, setSelectedStaff] = useState<StaffLine[]>([]);
+  const [pendingStaffId, setPendingStaffId] = useState("");
+  const [pendingStaffMinutes, setPendingStaffMinutes] = useState(0);
 
   // Client selector state
   const [localClients, setLocalClients] = useState<AvailableClient[]>(clients ?? []);
@@ -150,11 +161,25 @@ export function EventForm({
   const removeProvider = (id: string) =>
     setSelectedProviderIds((prev) => prev.filter((p) => p !== id));
 
+  const addStaff = () => {
+    if (!pendingStaffId || selectedStaff.some((l) => l.staffId === pendingStaffId)) return;
+    setSelectedStaff((prev) => [...prev, { staffId: pendingStaffId, estMinutes: pendingStaffMinutes }]);
+    setPendingStaffId("");
+    setPendingStaffMinutes(0);
+  };
+
+  const removeStaff = (staffId: string) =>
+    setSelectedStaff((prev) => prev.filter((l) => l.staffId !== staffId));
+
   const buildSubmit = (overrideState?: EventState) =>
     handleSubmit(async (formInput) => {
       setServerError(null);
       const data = overrideState ? { ...formInput, state: overrideState } : formInput;
-      const lines: EventLines = { services: selectedServices, providerIds: selectedProviderIds };
+      const lines: EventLines = {
+        services: selectedServices,
+        providerIds: selectedProviderIds,
+        staff: selectedStaff,
+      };
       const result = await onSubmit(data, lines);
       if (result.ok) {
         router.push(result.id ? `/eventos/${result.id}/editar` : "/eventos");
@@ -172,12 +197,21 @@ export function EventForm({
   const unaddedProviders = (availableProviders ?? []).filter(
     (p) => !selectedProviderIds.includes(p.id)
   );
+  const staffMap = Object.fromEntries((availableStaff ?? []).map((s) => [s.id, s]));
+  const unaddedStaff = (availableStaff ?? []).filter(
+    (s) => !selectedStaff.some((l) => l.staffId === s.id)
+  );
 
   // Live financial summary
   const servicePrice = selectedServices.reduce((s, l) => s + (serviceMap[l.serviceId]?.price ?? 0) * l.qty, 0);
   const serviceCost = selectedServices.reduce((s, l) => s + (serviceMap[l.serviceId]?.cost ?? 0) * l.qty, 0);
   const providerCost = selectedProviderIds.reduce((s, pid) => s + (providerMap[pid]?.cost ?? 0), 0);
-  const profit = servicePrice - serviceCost - providerCost;
+  // Staff hours are a venue cost only — they lower profit but never the client price.
+  const staffCost = selectedStaff.reduce(
+    (s, l) => s + staffLineCost(staffMap[l.staffId]?.hourlyRate ?? 0, l.estMinutes),
+    0,
+  );
+  const profit = servicePrice - serviceCost - providerCost - staffCost;
 
   const fmt = formatMoney;
 
@@ -280,7 +314,7 @@ export function EventForm({
               defaultValue={defaultValues?.state ?? EventState.PRESUPUESTADO}
               onValueChange={(v) => setValue("state", v as EventState)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Estado">
                 <SelectValue placeholder="Seleccione estado" />
               </SelectTrigger>
               <SelectContent>
@@ -403,8 +437,64 @@ export function EventForm({
         </div>
       )}
 
+      {/* Inline staff picker (internal hourly employees) */}
+      {availableStaff && availableStaff.length > 0 && (
+        <div className="space-y-3 border-t pt-4">
+          <p className="font-medium">Personal</p>
+          <p className="text-xs text-muted-foreground">
+            Empleados internos por hora. Su costo no se cobra al cliente; las horas son estimadas y
+            se ajustan al finalizar el evento.
+          </p>
+          {selectedStaff.length > 0 && (
+            <ul className="space-y-1">
+              {selectedStaff.map((l) => (
+                <li key={l.staffId} className="flex items-center justify-between text-sm bg-muted rounded px-3 py-1.5">
+                  <span>
+                    {staffMap[l.staffId]?.name}
+                    {staffMap[l.staffId]?.role ? ` (${staffMap[l.staffId].role})` : ""} — {formatHHMM(l.estMinutes)} hs
+                    {" · "}
+                    {fmt(staffLineCost(staffMap[l.staffId]?.hourlyRate ?? 0, l.estMinutes))}
+                  </span>
+                  <button type="button" onClick={() => removeStaff(l.staffId)} className="text-muted-foreground hover:text-destructive ml-4">✕</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {unaddedStaff.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-end">
+              <div className="flex-1 min-w-[12rem]">
+                <Label className="mb-1 block">Agregar empleado</Label>
+                <Select
+                  items={Object.fromEntries(unaddedStaff.map((s) => [s.id, `${s.name}${s.role ? ` (${s.role})` : ""}`]))}
+                  value={pendingStaffId}
+                  onValueChange={(v) => setPendingStaffId((v as string) ?? "")}
+                >
+                  <SelectTrigger className="w-full" aria-label="Agregar empleado">
+                    <SelectValue placeholder="Seleccionar…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unaddedStaff.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}{s.role ? ` (${s.role})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="mb-1 block">Horas est.</Label>
+                <HoursInput minutes={pendingStaffMinutes} onChange={setPendingStaffMinutes} />
+              </div>
+              <Button type="button" variant="secondary" onClick={addStaff} disabled={!pendingStaffId}>
+                Agregar
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Live Resumen — only on create when pickers present */}
-      {submitVariant === "create" && (availableServices || availableProviders) && (
+      {submitVariant === "create" && (availableServices || availableProviders || availableStaff) && (
         <div className="border rounded-lg p-4 space-y-2 bg-muted/30">
           <p className="font-medium text-sm">Resumen</p>
           <div className="text-sm space-y-1">
@@ -419,6 +509,10 @@ export function EventForm({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Costo prestadores</span>
               <span>{fmt(providerCost)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Costo personal</span>
+              <span>{fmt(staffCost)}</span>
             </div>
             <div className="flex justify-between font-medium border-t pt-2 mt-1">
               <span>Ganancia estimada</span>

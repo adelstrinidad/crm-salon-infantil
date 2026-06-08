@@ -75,6 +75,20 @@ async function main() {
     providers[p.name] = prov.id;
   }
 
+  // ─── Staff (internal hourly-paid employees) ───────────────────────────────
+  // hourlyRate in cents/hour.
+  const staffSeed = [
+    { name: "Ana Torres", role: "Mozo", hourlyRate: 250000 },
+    { name: "Diego Sosa", role: "Coordinador", hourlyRate: 400000 },
+    { name: "Romina Díaz", role: "Limpieza", hourlyRate: 200000 },
+  ];
+  const staff: Record<string, string> = {};
+  for (const s of staffSeed) {
+    const existing = await prisma.staff.findFirst({ where: { name: s.name } });
+    const row = existing ?? (await prisma.staff.create({ data: s }));
+    staff[s.name] = row.id;
+  }
+
   // ─── Clients ──────────────────────────────────────────────────────────────
   const clientSeed = [
     { name: "Familia García", phone: "+54 11 5555-1234", email: "garcia@example.com" },
@@ -119,6 +133,13 @@ async function main() {
         providers: {
           create: [{ providerId: providers["Mariana Gómez"] }],
         },
+        // Future event: hours only estimated → "falta registro de empleados".
+        staff: {
+          create: [
+            { staffId: staff["Ana Torres"], estMinutes: 300 },
+            { staffId: staff["Diego Sosa"], estMinutes: 240 },
+          ],
+        },
       },
     });
 
@@ -160,6 +181,13 @@ async function main() {
         },
         providers: {
           create: [{ providerId: providers["Carlos Ruiz"] }],
+        },
+        // Past event: real hours logged (registered).
+        staff: {
+          create: [
+            { staffId: staff["Ana Torres"], estMinutes: 300, actualMinutes: 330 },
+            { staffId: staff["Romina Díaz"], estMinutes: 120, actualMinutes: 120 },
+          ],
         },
       },
     });

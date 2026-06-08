@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { getEventWithAll } from "@/lib/events/eventProviderLines";
 import { listServices } from "@/lib/services/serviceService";
 import { listProviders } from "@/lib/providers/providerService";
+import { listStaff } from "@/lib/staff/staffService";
 import { listEventTypes } from "@/lib/eventTypes/eventTypeService";
 import { listClients } from "@/lib/clients/clientService";
 import { EventForm } from "@/components/eventos/EventForm";
 import { EventServicePicker } from "@/components/eventos/EventServicePicker";
 import { EventProviderPicker } from "@/components/eventos/EventProviderPicker";
 import { EventBonificadoPicker } from "@/components/eventos/EventBonificadoPicker";
+import { EventStaffPicker } from "@/components/eventos/EventStaffPicker";
 import { updateEventAction } from "../../actions";
 import { computeEventFinancials } from "@/lib/events/financials";
 import { centsToPesos, formatMoney } from "@/lib/money";
@@ -27,16 +29,18 @@ function toDatetimeLocal(date: Date): string {
 
 export default async function EditarEventoPage({ params }: Props) {
   const { id } = await params;
-  const [event, allServices, allProviders, allEventTypes, allClients] = await Promise.all([
-    getEventWithAll(id).catch(() => null),
-    listServices(),
-    listProviders(),
-    listEventTypes(),
-    listClients(),
-  ]);
+  const [event, allServices, allProviders, allStaff, allEventTypes, allClients] =
+    await Promise.all([
+      getEventWithAll(id).catch(() => null),
+      listServices(),
+      listProviders(),
+      listStaff(),
+      listEventTypes(),
+      listClients(),
+    ]);
   if (!event) return notFound();
 
-  const { serviceCost, servicePrice, providerCost, totalBonificado, totalCost, subtotal, profit } =
+  const { serviceCost, servicePrice, providerCost, staffCost, totalBonificado, totalCost, subtotal, profit } =
     computeEventFinancials(event);
 
   const defaultValues: EventFormInput = {
@@ -58,7 +62,7 @@ export default async function EditarEventoPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 max-w-2xl">
       <div>
         <PageHeader title="Editar evento" />
         <EventForm
@@ -83,6 +87,10 @@ export default async function EditarEventoPage({ params }: Props) {
 
       <hr />
 
+      <EventStaffPicker eventId={id} lines={event.staff} available={allStaff} />
+
+      <hr />
+
       <EventBonificadoPicker eventId={id} lines={event.bonificados} available={allServices} />
 
       <hr />
@@ -96,6 +104,8 @@ export default async function EditarEventoPage({ params }: Props) {
           <span>{formatMoney(serviceCost)}</span>
           <span className="text-muted-foreground">Costo prestadores</span>
           <span>{formatMoney(providerCost)}</span>
+          <span className="text-muted-foreground">Costo personal</span>
+          <span>{formatMoney(staffCost)}</span>
           <span className="text-muted-foreground">Total bonificado</span>
           <span className="text-accent">-{formatMoney(totalBonificado)}</span>
           <span className="text-muted-foreground font-medium">Subtotal</span>

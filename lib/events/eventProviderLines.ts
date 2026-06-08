@@ -16,6 +16,10 @@ export async function getEventWithAll(id: string) {
         include: { service: true },
         orderBy: { service: { name: "asc" } },
       },
+      staff: {
+        include: { staff: true },
+        orderBy: { staff: { name: "asc" } },
+      },
     },
   });
 }

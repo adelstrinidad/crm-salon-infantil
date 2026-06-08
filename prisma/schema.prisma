@@ -62,6 +62,7 @@ model Event {
   services    EventService[]
   providers   EventProvider[]
   bonificados EventBonificado[]
+  staff       EventStaff[]
 
   @@index([startAt])
   @@index([state])
@@ -148,6 +149,41 @@ model EventProvider {
 
   @@unique([eventId, providerId])
   @@index([providerId])
+}
+
+// ─── Personal (internal hourly-paid staff) ──────────────────────────────────
+// Distinct from Provider (external prestador, fixed cost per event). Staff are
+// internal employees paid by the hour: an event may run 3h but an employee
+// works 4–5h (setup, teardown). Their hours are a venue COST, never billed to
+// the client (already covered by the event price).
+model Staff {
+  id         String       @id @default(cuid())
+  name       String
+  role       String?                       // e.g. "Mozo", "Coordinador", "Limpieza"
+  hourlyRate Int          @default(0)       // what the venue pays per hour, in cents
+  active     Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  events     EventStaff[]
+}
+
+// ─── Event ↔ Staff join ──────────────────────────────────────────────────────
+// estMinutes = estimated hours at assignment; actualMinutes = real hours logged
+// after the event (null = "falta registro de empleados"). Both are multiples of
+// 30 (half-hour granularity). Cost uses actualMinutes ?? estMinutes.
+model EventStaff {
+  id            String    @id @default(cuid())
+  eventId       String
+  staffId       String
+  estMinutes    Int?                        // estimated minutes at assignment
+  actualMinutes Int?                        // real minutes logged after the event; null = unregistered
+  paid          Boolean   @default(false)
+  paidAt        DateTime?
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  staff         Staff     @relation(fields: [staffId], references: [id])
+
+  @@unique([eventId, staffId])
+  @@index([staffId])
 }
 
 // ─── Finanzas ─────────────────────────────────────────────────────────────────
