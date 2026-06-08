@@ -6,6 +6,7 @@ import {
   makeProvider,
   makeProveedor,
   makeService,
+  makeStaff,
   makeAccount,
 } from "./setup/db";
 import {
@@ -15,6 +16,8 @@ import {
   markServicePaid,
   payProvider,
   payService,
+  getStaffPayments,
+  payStaff,
 } from "@/lib/pagos/pagosService";
 
 // Build the EGRESO movement payload the pago actions pass to payProvider/payService.
@@ -45,6 +48,24 @@ async function eventWithProvider(startAt = new Date("2026-06-10T15:00:00")) {
     data: { eventId: event.id, providerId: provider.id },
   });
   return { event, provider, link };
+}
+
+// An event with one staff assignment (real hours logged so it's payable).
+async function eventWithStaff(
+  startAt = new Date("2026-06-10T15:00:00"),
+  opts: { actualMinutes?: number | null } = {},
+) {
+  const event = await makeEvent({ startAt });
+  const staff = await makeStaff({ hourlyRate: 250000 }); // $2.500/h
+  const link = await prisma.eventStaff.create({
+    data: {
+      eventId: event.id,
+      staffId: staff.id,
+      estMinutes: 300,
+      actualMinutes: opts.actualMinutes === undefined ? 300 : opts.actualMinutes,
+    },
+  });
+  return { event, staff, link };
 }
 
 // An event with one service line whose service has a proveedor.
@@ -174,6 +195,64 @@ describe("payProvider — atomic settlement", () => {
     expect(row.paidAt).toBeNull();
     const movements = await prisma.movement.findMany();
     expect(movements).toHaveLength(0);
+  });
+});
+
+describe("getStaffPayments", () => {
+  it("lists staff assignments with event and staff included", async () => {
+    const { staff } = await eventWithStaff();
+    const rows = await getStaffPayments({});
+    expect(rows).toHaveLength(1);
+    expect(rows[0].staff.id).toBe(staff.id);
+    expect(rows[0].event).toBeTruthy();
+    expect(rows[0].paid).toBe(false);
+  });
+
+  it("filters by staffId, paid status, and event date range", async () => {
+    const a = await eventWithStaff();
+    await eventWithStaff(new Date("2026-05-20T10:00:00"));
+    expect(await getStaffPayments({ staffId: a.staff.id })).toHaveLength(1);
+    await markStaffPaidViaPay(a.link.id);
+    expect(await getStaffPayments({ paid: true })).toHaveLength(1);
+    expect(await getStaffPayments({ paid: false })).toHaveLength(1);
+    const inRange = await getStaffPayments({
+      from: new Date("2026-06-01"),
+      to: new Date("2026-06-30"),
+    });
+    expect(inRange).toHaveLength(1);
+  });
+});
+
+// Helper: pay a staff line through the atomic settlement (needs an account).
+async function markStaffPaidViaPay(eventStaffId: string) {
+  const account = await makeAccount();
+  return payStaff(eventStaffId, egresoFor(account.id, 1250000));
+}
+
+describe("payStaff — atomic settlement", () => {
+  it("marks paid AND records the EGRESO movement together", async () => {
+    const { link } = await eventWithStaff();
+    const account = await makeAccount();
+
+    await payStaff(link.id, egresoFor(account.id, 1250000)); // $2.500 × 5h
+
+    const row = await prisma.eventStaff.findUniqueOrThrow({ where: { id: link.id } });
+    expect(row.paid).toBe(true);
+    expect(row.paidAt).toBeInstanceOf(Date);
+    const movements = await prisma.movement.findMany({ where: { accountId: account.id } });
+    expect(movements).toHaveLength(1);
+    expect(movements[0].type).toBe("EGRESO");
+    expect(movements[0].amount).toBe(1250000);
+  });
+
+  it("rolls back the paid flag when the movement creation fails", async () => {
+    const { link } = await eventWithStaff();
+    await expect(payStaff(link.id, egresoFor("nonexistent-account-id"))).rejects.toThrow();
+
+    const row = await prisma.eventStaff.findUniqueOrThrow({ where: { id: link.id } });
+    expect(row.paid).toBe(false);
+    expect(row.paidAt).toBeNull();
+    expect(await prisma.movement.findMany()).toHaveLength(0);
   });
 });
 

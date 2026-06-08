@@ -68,6 +68,8 @@ export async function listEventsFiltered(opts: {
       orderBy: { [field]: dir },
       skip: opts.skip,
       take: opts.take,
+      // Pull just enough to derive the "falta registro de empleados" flag per row.
+      include: { staff: { select: { actualMinutes: true } } },
     }),
     prisma.event.count({ where }),
   ]);

@@ -2,6 +2,7 @@ import { EventForm } from "@/components/eventos/EventForm";
 import { createEventAction } from "../actions";
 import { listServices } from "@/lib/services/serviceService";
 import { listProviders } from "@/lib/providers/providerService";
+import { listStaff } from "@/lib/staff/staffService";
 import { listEventTypes } from "@/lib/eventTypes/eventTypeService";
 import { listClients } from "@/lib/clients/clientService";
 import { quickCreateClientAction } from "@/app/(dashboard)/clientes/actions";
@@ -26,9 +27,10 @@ function sanitizeDatetimeLocal(value: string | undefined): string | undefined {
 
 export default async function NuevoEventoPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const [services, providers, eventTypes, clients] = await Promise.all([
+  const [services, providers, staff, eventTypes, clients] = await Promise.all([
     listServices(),
     listProviders(),
+    listStaff(),
     listEventTypes(),
     listClients(),
   ]);
@@ -45,6 +47,7 @@ export default async function NuevoEventoPage({ searchParams }: Props) {
         submitVariant="create"
         availableServices={services}
         availableProviders={providers}
+        availableStaff={staff}
         eventTypes={eventTypes}
         clients={clients}
         createClient={quickCreateClientAction}

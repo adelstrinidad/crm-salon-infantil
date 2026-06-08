@@ -11,9 +11,11 @@ export async function resetDb() {
   await prisma.eventService.deleteMany();
   await prisma.eventBonificado.deleteMany();
   await prisma.eventProvider.deleteMany();
+  await prisma.eventStaff.deleteMany();
   await prisma.event.deleteMany();
   await prisma.service.deleteMany();
   await prisma.provider.deleteMany();
+  await prisma.staff.deleteMany();
   await prisma.proveedor.deleteMany();
   await prisma.account.deleteMany();
   await prisma.client.deleteMany();
@@ -85,6 +87,15 @@ export function makeService(
 export function makeProvider(overrides: Partial<{ name: string; cost: number; role: string }> = {}) {
   return prisma.provider.create({
     data: { name: `Prestador ${uniq()}`, cost: 0, ...overrides },
+  });
+}
+
+export function makeStaff(
+  overrides: Partial<{ name: string; role: string; hourlyRate: number; active: boolean }> = {}
+) {
+  // hourlyRate in cents/hour.
+  return prisma.staff.create({
+    data: { name: `Empleado ${uniq()}`, hourlyRate: 0, ...overrides },
   });
 }
 

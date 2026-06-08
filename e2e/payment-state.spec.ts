@@ -11,6 +11,20 @@ const ADMIN_EMAIL = "admin@salon.local";
 const ADMIN_PASSWORD = "admin1234";
 const TOTAL = "100"; // event price in pesos
 
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+// A unique future time slot per run so repeated runs never double-book the venue
+// (a confirmed RESERVADO event can't overlap another).
+function uniqueSlot(): { start: string; end: string } {
+  const d = new Date(2027, 5, 1, 9, 0);
+  d.setMinutes(d.getMinutes() + (Date.now() % 200000));
+  const fmt = (x: Date) =>
+    `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}T${pad(x.getHours())}:${pad(x.getMinutes())}`;
+  return { start: fmt(d), end: fmt(new Date(d.getTime() + 3 * 60 * 60 * 1000)) };
+}
+
 async function login(page: Page) {
   await page.goto("/login");
   await page.getByRole("textbox", { name: "Email" }).fill(ADMIN_EMAIL);
@@ -31,8 +45,9 @@ async function createReservedEvent(page: Page, name: string): Promise<string> {
   await page.getByText("Seleccionar cliente…").click();
   await page.getByRole("option", { name: "Familia García" }).click();
 
-  await page.getByRole("textbox", { name: "Inicio" }).fill("2026-07-01T15:00");
-  await page.getByRole("textbox", { name: "Fin" }).fill("2026-07-01T18:00");
+  const { start, end } = uniqueSlot();
+  await page.getByRole("textbox", { name: "Inicio" }).fill(start);
+  await page.getByRole("textbox", { name: "Fin" }).fill(end);
 
   await page.getByRole("button", { name: "Reservar" }).click();
 
