@@ -270,7 +270,7 @@ export default async function EventoDetailPage({ params }: Props) {
                 <tr key={l.id} className="hover:bg-muted/40 transition-colors">
                   <td className="px-3 py-2 font-medium">{l.provider.name}</td>
                   <td className="px-3 py-2 text-muted-foreground">{l.provider.role ?? "—"}</td>
-                  <td className="px-3 py-2 text-right">{fmt(l.provider.cost)}</td>
+                  <td className="px-3 py-2 text-right">{fmt(l.cost)}</td>
                   <td className="px-3 py-2">
                     {l.paid ? (
                       <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">

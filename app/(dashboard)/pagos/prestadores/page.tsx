@@ -38,8 +38,9 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
     listProviders(),
   ]);
 
-  const totalPendiente = rows.filter((r) => !r.paid).reduce((s, r) => s + r.provider.cost, 0);
-  const totalPagado = rows.filter((r) => r.paid).reduce((s, r) => s + r.provider.cost, 0);
+  // Amount owed/paid is the explicit per-event provider cost.
+  const totalPendiente = rows.filter((r) => !r.paid).reduce((s, r) => s + r.cost, 0);
+  const totalPagado = rows.filter((r) => r.paid).reduce((s, r) => s + r.cost, 0);
 
   return (
     <div className="space-y-6">
@@ -126,7 +127,7 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
                   <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
                     {new Date(r.event.startAt).toLocaleDateString("es-AR")}
                   </td>
-                  <td className="px-4 py-2 text-right font-medium">{fmt(r.provider.cost)}</td>
+                  <td className="px-4 py-2 text-right font-medium">{fmt(r.cost)}</td>
                   <td className="px-4 py-2">
                     {r.paid ? (
                       <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
@@ -142,7 +143,7 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
                     {!r.paid && accounts.length > 0 && (
                       <PagarButton
                         eventProviderId={r.id}
-                        amount={r.provider.cost}
+                        amount={r.cost}
                         description={`Pago ${r.provider.name} — ${r.event.name}`}
                         accounts={accounts}
                       />

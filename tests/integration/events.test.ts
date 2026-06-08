@@ -16,6 +16,8 @@ import {
 // Integration tests for the event service CRUD + the list queries the UI uses
 // (paginated table, calendar range). Money in cents; dates are real Dates.
 
+// No totalPrice: the price is derived from service/bonificado lines via
+// recomputeEventTotalPrice(), never set through createEvent/updateEvent.
 const baseEvent = {
   name: "Cumpleaños de Sofía",
   eventType: "Cumpleaños",
@@ -23,7 +25,6 @@ const baseEvent = {
   startAt: new Date("2026-06-10T15:00:00"),
   endAt: new Date("2026-06-10T18:00:00"),
   state: "PRESUPUESTADO" as const,
-  totalPrice: 1_500_000,
 };
 
 beforeEach(async () => {
@@ -35,7 +36,7 @@ describe("createEvent / getEvent", () => {
     const created = await createEvent(baseEvent);
     const found = await getEvent(created.id);
     expect(found.name).toBe("Cumpleaños de Sofía");
-    expect(found.totalPrice).toBe(1_500_000);
+    expect(found.totalPrice).toBe(0); // no service lines yet → derived price is 0
     expect(found.state).toBe("PRESUPUESTADO");
   });
 
@@ -54,9 +55,9 @@ describe("createEvent / getEvent", () => {
 describe("updateEvent / setEventState / deleteEvent", () => {
   it("updates fields", async () => {
     const e = await createEvent(baseEvent);
-    const updated = await updateEvent(e.id, { ...baseEvent, name: "Renombrado", totalPrice: 2_000_000 });
+    const updated = await updateEvent(e.id, { ...baseEvent, name: "Renombrado" });
     expect(updated.name).toBe("Renombrado");
-    expect(updated.totalPrice).toBe(2_000_000);
+    expect(updated.totalPrice).toBe(0); // updateEvent never touches the derived price
   });
 
   it("changes only the state", async () => {
@@ -74,7 +75,7 @@ describe("updateEvent / setEventState / deleteEvent", () => {
     expect(moved.startAt.getTime()).toBe(newStart.getTime());
     expect(moved.endAt.getTime()).toBe(newEnd.getTime());
     expect(moved.name).toBe(baseEvent.name); // untouched
-    expect(moved.totalPrice).toBe(baseEvent.totalPrice); // untouched
+    expect(moved.totalPrice).toBe(0); // untouched
     expect(moved.state).toBe(baseEvent.state); // untouched
   });
 

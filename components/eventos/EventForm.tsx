@@ -123,7 +123,6 @@ export function EventForm({
     resolver: zodResolver(eventFormInputSchema),
     defaultValues: {
       state: EventState.PRESUPUESTADO,
-      totalPrice: "0",
       startAt: "",
       endAt: "",
       ...defaultValues,
@@ -304,7 +303,9 @@ export function EventForm({
         </div>
       </div>
 
-      {/* Estado only shown in edit mode — create mode uses Presupuestar/Reservar buttons */}
+      {/* Estado only shown in edit mode — create mode uses Presupuestar/Reservar buttons.
+          There is no price field: the event price is derived from its service lines
+          (minus bonificados), never entered by hand. */}
       {submitVariant === "edit" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -325,11 +326,6 @@ export function EventForm({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="totalPrice">Precio total</Label>
-            <Input id="totalPrice" type="number" step="0.01" {...register("totalPrice")} />
-            {errors.totalPrice && <p className="text-sm text-destructive">{errors.totalPrice.message}</p>}
           </div>
         </div>
       )}

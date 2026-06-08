@@ -2,7 +2,6 @@
 // Rule: use plain z.string() in the form schema (what HTML sends), coerce/transform in eventSchema.
 
 import { z } from "zod";
-import { parsePesosToCents } from "@/lib/money";
 
 export const EventState = {
   PRESUPUESTADO: "PRESUPUESTADO",
@@ -26,7 +25,9 @@ export const eventFormInputSchema = z.object({
   state: z.nativeEnum(EventState),
   details: z.string().optional(),
   notes: z.string().optional(),
-  totalPrice: z.string(), // string from <input type="number">; default "0" set in form defaultValues
+  // NOTE: there is no `totalPrice` field. The event price is never entered by
+  // hand — it is derived from the event's service lines minus bonificados and
+  // kept in sync via recomputeEventTotalPrice() (see lib/events/eventService.ts).
 });
 
 export type EventFormInput = z.infer<typeof eventFormInputSchema>;
@@ -36,7 +37,6 @@ export const eventSchema = eventFormInputSchema.transform((data) => ({
   ...data,
   startAt: new Date(data.startAt),
   endAt: new Date(data.endAt),
-  totalPrice: parsePesosToCents(data.totalPrice),
 }));
 
 export type EventFormValues = z.output<typeof eventSchema>;

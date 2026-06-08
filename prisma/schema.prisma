@@ -142,6 +142,10 @@ model EventProvider {
   id         String    @id @default(cuid())
   eventId    String
   providerId String
+  // Per-event cost in cents — always explicit (never null). On assign it is
+  // snapshotted from the provider's catalog cost; the user can override it per
+  // event (e.g. catering whose price varies). Feeds financials and pago reports.
+  cost       Int       @default(0)
   paid       Boolean   @default(false)
   paidAt     DateTime?
   event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)

@@ -56,7 +56,7 @@ SQLite (dev) / PostgreSQL (later)
 **Characteristics**:
 - Normalized relational schema, managed by Prisma migrations (SQLite in dev).
 - Core entities: **Event** (with state: Reservado/Señado/Pagado/Cerrado/Suspendido/Presupuestado/Día festivo), **EventType**, **Client**, **Service**, **Provider/Staff** (prestador), **EventService**, **EventProvider**, **Bonificado** (complimentary service line), **Account** (cuenta), **Movement** (categories: Ingreso/Egreso/Transferencia/Arqueo/Inversión/Retiros), **Payment** (supplier/staff). Roadmap entities: Invitation/Guest, InventoryItem, FurnitureItem, Sale.
-- The **Event** is the central aggregate: it links event type, client, services, providers, complimentary lines, and derives the financial summary (costo total, ganancia, subtotal, precio total). Movements and payments post against accounts and may be linked or not linked to an event.
+- The **Event** is the central aggregate: it links event type, client, services, providers, complimentary lines, and derives the financial summary (costo total, ganancia, subtotal, precio total). **`Event.totalPrice` is a derived, persisted value (not user input): it equals the subtotal (service prices − bonificados) and is recomputed via `recomputeEventTotalPrice()` whenever an event's services or bonificados change. Providers/staff are costs only and never affect price.** Movements and payments post against accounts and may be linked or not linked to an event.
 
 **Database**: SQLite (dev) via Prisma; migrate to PostgreSQL later with no query-code changes.
 

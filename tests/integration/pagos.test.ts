@@ -45,7 +45,7 @@ async function eventWithProvider(startAt = new Date("2026-06-10T15:00:00")) {
   const event = await makeEvent({ startAt });
   const provider = await makeProvider({ cost: 50000 });
   const link = await prisma.eventProvider.create({
-    data: { eventId: event.id, providerId: provider.id },
+    data: { eventId: event.id, providerId: provider.id, cost: provider.cost },
   });
   return { event, provider, link };
 }

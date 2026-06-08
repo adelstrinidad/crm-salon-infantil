@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeEventFinancials, type EventLines } from "./financials";
+import { computeEventFinancials, effectiveProviderCost, type EventLines } from "./financials";
 
 // The event financial summary is the core domain calculation: it drives the
 // detail page, the presupuesto, the edit page, and every report. These tests
@@ -36,11 +36,22 @@ describe("computeEventFinancials", () => {
   it("sums provider cost into total cost (providers have no qty)", () => {
     const f = computeEventFinancials({
       ...empty,
-      providers: [{ provider: { cost: 500 } }, { provider: { cost: 300 } }],
+      providers: [{ cost: 500 }, { cost: 300 }],
     });
     expect(f.providerCost).toBe(800);
     expect(f.totalCost).toBe(800);
     expect(f.profit).toBe(-800);
+  });
+
+  it("uses the explicit per-event provider cost", () => {
+    expect(effectiveProviderCost({ cost: 900 })).toBe(900);
+    expect(effectiveProviderCost({ cost: 0 })).toBe(0);
+
+    const f = computeEventFinancials({
+      ...empty,
+      providers: [{ cost: 1200 }, { cost: 300 }],
+    });
+    expect(f.providerCost).toBe(1500); // 1200 + 300
   });
 
   it("subtracts bonificados from the subtotal but not from cost", () => {
@@ -63,7 +74,7 @@ describe("computeEventFinancials", () => {
         { qty: 2, service: { cost: 100, price: 300 } }, // price 600, cost 200
         { qty: 1, service: { cost: 50, price: 200 } }, //  price 200, cost 50
       ],
-      providers: [{ provider: { cost: 400 } }], // cost 400
+      providers: [{ cost: 400 }], // cost 400
       bonificados: [{ qty: 1, service: { price: 100 } }], // bonificado 100
     });
     expect(f.servicePrice).toBe(800);
@@ -79,7 +90,7 @@ describe("computeEventFinancials", () => {
     const f = computeEventFinancials({
       ...empty,
       services: [{ qty: 1, service: { cost: 900, price: 1000 } }],
-      providers: [{ provider: { cost: 500 } }],
+      providers: [{ cost: 500 }],
       bonificados: [{ qty: 1, service: { price: 400 } }],
     });
     expect(f.subtotal).toBe(600); // 1000 - 400

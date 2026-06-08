@@ -9,7 +9,8 @@ import { test, expect, type Page } from "@playwright/test";
 
 const ADMIN_EMAIL = "admin@salon.local";
 const ADMIN_PASSWORD = "admin1234";
-const TOTAL = "100"; // event price in pesos
+// The event price is derived from its services (no manual price field). We add
+// the seeded "Animación" service (price $10.000) so the total is deterministic.
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -55,10 +56,13 @@ async function createReservedEvent(page: Page, name: string): Promise<string> {
   await page.waitForURL(/\/eventos\/[^/]+\/editar$/);
   const id = page.url().match(/\/eventos\/([^/]+)\/editar$/)![1];
 
-  // Set the total price (only available in edit mode) and save.
-  await page.getByRole("spinbutton", { name: "Precio total" }).fill(TOTAL);
-  await page.getByRole("button", { name: "Guardar cambios" }).click();
-  await page.waitForURL("**/eventos");
+  // Price is derived from services (no manual field). Add a known-priced service
+  // so the total is deterministic; it auto-saves (no "Guardar" needed). Scope to
+  // the "Servicios del evento" section to disambiguate from the other pickers.
+  await page.getByRole("combobox", { name: "Agregar servicio" }).click();
+  await page.getByRole("option", { name: /Animación/ }).click();
+  await page.getByRole("button", { name: "Agregar servicio" }).click();
+  await expect(page.getByRole("cell", { name: "Animación" })).toBeVisible();
 
   return id;
 }
@@ -79,21 +83,21 @@ test("payment advances event state: RESERVADO → SENADO → PAGADO", async ({ p
 
   // Starts as Reservado, nothing collected.
   await expect(page.getByText("Reservado").first()).toBeVisible();
-  await expect(page.getByRole("row", { name: /Saldo \$100/ })).toBeVisible();
+  await expect(page.getByRole("row", { name: /Saldo \$10\.000/ })).toBeVisible();
 
-  // Partial payment ($40 of $100) → SENADO.
-  await registrarCobro(page, "40");
+  // Partial payment ($4.000 of $10.000) → SENADO.
+  await registrarCobro(page, "4000");
   await expect(page.getByText("Señado").first()).toBeVisible();
-  await expect(page.getByRole("row", { name: /Cobrado \$40/ })).toBeVisible();
-  await expect(page.getByRole("row", { name: /Saldo \$60/ })).toBeVisible();
+  await expect(page.getByRole("row", { name: /Cobrado \$4\.000/ })).toBeVisible();
+  await expect(page.getByRole("row", { name: /Saldo \$6\.000/ })).toBeVisible();
   // Not yet fully paid.
   await expect(page.getByText("Pagado")).toHaveCount(0);
   // The cobro movement gets a default description (no manual one was entered).
   await expect(page.getByRole("cell", { name: /Cobro —/ }).first()).toBeVisible();
 
-  // Remaining payment ($60) completes the total → PAGADO.
-  await registrarCobro(page, "60");
+  // Remaining payment ($6.000) completes the total → PAGADO.
+  await registrarCobro(page, "6000");
   await expect(page.getByText("Pagado").first()).toBeVisible();
-  await expect(page.getByRole("row", { name: /Cobrado \$100/ })).toBeVisible();
+  await expect(page.getByRole("row", { name: /Cobrado \$10\.000/ })).toBeVisible();
   await expect(page.getByRole("row", { name: /Saldo \$0/ })).toBeVisible();
 });

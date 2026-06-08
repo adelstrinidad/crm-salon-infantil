@@ -12,6 +12,7 @@ import {
   rescheduleEvent,
   findBlockingOverlap,
   isBlockingState,
+  recomputeEventTotalPrice,
 } from "@/lib/events/eventService";
 import { addServiceToEvent } from "@/lib/events/eventServiceLines";
 import { addProviderToEvent } from "@/lib/events/eventProviderLines";
@@ -69,6 +70,8 @@ export async function createEventAction(
       lines.staff.map((l) => addStaffToEvent(event.id, l.staffId, l.estMinutes || null)),
     );
   }
+  // Price is derived from the service/bonificado lines, never entered by hand.
+  await recomputeEventTotalPrice(event.id);
   revalidatePath("/eventos");
   return { ok: true, id: event.id };
 }

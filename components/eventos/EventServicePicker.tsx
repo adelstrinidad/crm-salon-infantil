@@ -114,7 +114,7 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
               value={selectedId}
               onValueChange={(v) => setSelectedId((v as string) ?? "")}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Agregar servicio">
                 <SelectValue placeholder="Seleccionar…" />
               </SelectTrigger>
               <SelectContent>
@@ -136,7 +136,7 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
               className="h-9 w-full rounded-md border bg-card px-3 text-sm"
             />
           </div>
-          <Button onClick={handleAdd} disabled={busy || !selectedId}>
+          <Button onClick={handleAdd} disabled={busy || !selectedId} aria-label="Agregar servicio">
             Agregar
           </Button>
         </div>

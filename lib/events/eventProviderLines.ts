@@ -24,11 +24,27 @@ export async function getEventWithAll(id: string) {
   });
 }
 
-export async function addProviderToEvent(eventId: string, providerId: string) {
+// Attach a provider to an event. `cost` is the explicit per-event cost in cents;
+// when omitted, it is snapshotted from the provider's catalog cost. Never null.
+export async function addProviderToEvent(
+  eventId: string,
+  providerId: string,
+  cost?: number,
+) {
+  const resolvedCost =
+    cost ?? (await prisma.provider.findUniqueOrThrow({ where: { id: providerId } })).cost;
   return prisma.eventProvider.upsert({
     where: { eventId_providerId: { eventId, providerId } },
-    create: { eventId, providerId },
-    update: {},
+    create: { eventId, providerId, cost: resolvedCost },
+    update: { cost: resolvedCost },
+  });
+}
+
+// Update the explicit per-event cost of an already-attached provider.
+export async function setProviderCost(eventId: string, providerId: string, cost: number) {
+  return prisma.eventProvider.update({
+    where: { eventId_providerId: { eventId, providerId } },
+    data: { cost },
   });
 }
 
