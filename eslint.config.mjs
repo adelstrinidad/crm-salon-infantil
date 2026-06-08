@@ -18,6 +18,12 @@ const eslintConfig = defineConfig([
     // Prisma-generated client.
     "app/generated/**",
   ]),
+  // Playwright e2e suite: the fixture callback param is named `use` (Playwright
+  // API), which the React rule misreads as a hook. These files are not React.
+  {
+    files: ["e2e/**"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
 ]);
 
 export default eslintConfig;

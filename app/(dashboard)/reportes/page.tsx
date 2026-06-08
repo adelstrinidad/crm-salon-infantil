@@ -62,12 +62,12 @@ export default async function ReportesPage({ searchParams }: Props) {
         <Card className="p-4">
           <form method="GET" className="flex flex-wrap items-end gap-3">
             <div className="space-y-1 w-full sm:w-40">
-              <label className="text-sm font-medium">Fecha desde</label>
-              <Input type="date" name="from" defaultValue={toInputDate(from)} />
+              <label htmlFor="from" className="text-sm font-medium">Fecha desde</label>
+              <Input id="from" type="date" name="from" defaultValue={toInputDate(from)} />
             </div>
             <div className="space-y-1 w-full sm:w-40">
-              <label className="text-sm font-medium">Fecha hasta</label>
-              <Input type="date" name="to" defaultValue={toInputDate(to)} />
+              <label htmlFor="to" className="text-sm font-medium">Fecha hasta</label>
+              <Input id="to" type="date" name="to" defaultValue={toInputDate(to)} />
             </div>
             <div className="space-y-1 w-full sm:w-44">
               <label className="text-sm font-medium">Estado</label>
