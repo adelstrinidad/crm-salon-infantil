@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { addBonificadoAction, removeBonificadoAction } from "@/app/(dashboard)/eventos/[id]/bonificados-actions";
 import { SectionTitle } from "@/components/ui/section-title";
 import { formatMoney } from "@/lib/money";
+import { useAutosave } from "@/components/eventos/autosave";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,7 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
   const [selectedId, setSelectedId] = useState("");
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
+  const { run: autosaveRun } = useAutosave();
 
   const attachedIds = new Set(lines.map((l) => l.serviceId));
   const unattached = available.filter((s) => !attachedIds.has(s.id));
@@ -39,7 +41,7 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
   async function handleAdd() {
     if (!selectedId) return;
     setBusy(true);
-    await addBonificadoAction(eventId, selectedId, qty);
+    await autosaveRun(() => addBonificadoAction(eventId, selectedId, qty));
     setSelectedId("");
     setQty(1);
     setBusy(false);
@@ -47,7 +49,7 @@ export function EventBonificadoPicker({ eventId, lines, available }: Props) {
 
   async function handleRemove(serviceId: string) {
     setBusy(true);
-    await removeBonificadoAction(eventId, serviceId);
+    await autosaveRun(() => removeBonificadoAction(eventId, serviceId));
     setBusy(false);
   }
 

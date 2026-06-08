@@ -10,6 +10,7 @@ import {
 } from "@/app/(dashboard)/eventos/[id]/providers-actions";
 import { SectionTitle } from "@/components/ui/section-title";
 import { formatMoney, parsePesosToCents, centsToPesos } from "@/lib/money";
+import { useAutosave } from "@/components/eventos/autosave";
 import {
   Select,
   SelectContent,
@@ -42,6 +43,7 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
   const [editingIds, setEditingIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { run: autosaveRun } = useAutosave();
 
   function startEdit(providerId: string, currentPesos: number) {
     setError(null);
@@ -77,7 +79,7 @@ export function EventProviderPicker({ eventId, lines, available }: Props) {
   async function run(fn: () => Promise<{ ok: boolean; error?: string }>) {
     setBusy(true);
     setError(null);
-    const res = await fn();
+    const res = await autosaveRun(fn);
     if (!res.ok) setError(res.error ?? "Error");
     setBusy(false);
     return res;

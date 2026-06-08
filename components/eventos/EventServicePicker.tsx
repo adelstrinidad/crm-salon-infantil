@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { addServiceAction, removeServiceAction } from "@/app/(dashboard)/eventos/[id]/services-actions";
 import { SectionTitle } from "@/components/ui/section-title";
 import { formatMoney } from "@/lib/money";
+import { useAutosave } from "@/components/eventos/autosave";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,7 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
   const [selectedId, setSelectedId] = useState("");
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
+  const { run: autosaveRun } = useAutosave();
 
   const attachedIds = new Set(lines.map((l) => l.serviceId));
   const unattached = available.filter((s) => !attachedIds.has(s.id));
@@ -38,7 +40,7 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
   async function handleAdd() {
     if (!selectedId) return;
     setBusy(true);
-    await addServiceAction(eventId, selectedId, qty);
+    await autosaveRun(() => addServiceAction(eventId, selectedId, qty));
     setSelectedId("");
     setQty(1);
     setBusy(false);
@@ -46,7 +48,7 @@ export function EventServicePicker({ eventId, lines, available }: Props) {
 
   async function handleRemove(serviceId: string) {
     setBusy(true);
-    await removeServiceAction(eventId, serviceId);
+    await autosaveRun(() => removeServiceAction(eventId, serviceId));
     setBusy(false);
   }
 

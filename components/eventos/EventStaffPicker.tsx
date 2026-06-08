@@ -6,6 +6,7 @@ import { SectionTitle } from "@/components/ui/section-title";
 import { HoursInput } from "@/components/ui/hours-input";
 import { formatMoney } from "@/lib/money";
 import { formatHHMM, staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
+import { useAutosave } from "@/components/eventos/autosave";
 import {
   addStaffAction,
   removeStaffAction,
@@ -41,6 +42,7 @@ export function EventStaffPicker({ eventId, lines, available }: Props) {
   const [pendingMinutes, setPendingMinutes] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { run: autosaveRun } = useAutosave();
 
   // Per-row local state for editing actual hours.
   const [actualDraft, setActualDraft] = useState<Record<string, number>>({});
@@ -80,7 +82,7 @@ export function EventStaffPicker({ eventId, lines, available }: Props) {
   async function run(fn: () => Promise<{ ok: boolean; error?: string }>) {
     setBusy(true);
     setError(null);
-    const res = await fn();
+    const res = await autosaveRun(fn);
     if (!res.ok) setError(res.error ?? "Error");
     setBusy(false);
     return res;

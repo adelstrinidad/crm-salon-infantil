@@ -109,11 +109,11 @@ test("staff can be added and edited on a PAGADO event, with correct cost", async
 
   const id = await createReservedEvent(page, `E2E Personal Pagado ${Date.now()}`);
 
-  // Move the event to PAGADO via the edit form's Estado select, then save.
+  // Move the event to PAGADO via the edit form's Estado select. The edit page
+  // auto-saves on change (no "Guardar" button) — wait for the saved indicator.
   await page.getByLabel("Estado").click();
   await page.getByRole("option", { name: "Pagado" }).click();
-  await page.getByRole("button", { name: "Guardar cambios" }).click();
-  await page.waitForURL("**/eventos");
+  await expect(page.getByText("Guardado", { exact: true })).toBeVisible();
 
   // Reopen the (now PAGADO) event and assign staff — must still be allowed.
   await page.goto(`/eventos/${id}/editar`);
