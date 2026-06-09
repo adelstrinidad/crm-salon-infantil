@@ -24,11 +24,23 @@ export class ServicioFormPage {
   get priceInput(): Locator {
     return this.page.getByRole("spinbutton", { name: "Precio (lo que cobrás)" });
   }
+  get prestadorSelect(): Locator {
+    return this.page.getByLabel("Prestador");
+  }
   get submitButton(): Locator {
     return this.page.getByRole("button", { name: /Crear servicio|Guardar/ });
   }
   get errorMessage(): Locator {
     return this.page.getByText(/requerid|error|inválid/i);
+  }
+
+  /**
+   * Pick the prestador that backs this service (NativeSelect option label).
+   * @param {string} optionLabel - Visible option text, e.g. "Nombre (Rol)".
+   * @returns {Promise<void>}
+   */
+  async selectPrestador(optionLabel: string): Promise<void> {
+    await this.prestadorSelect.selectOption({ label: optionLabel });
   }
 
   /**

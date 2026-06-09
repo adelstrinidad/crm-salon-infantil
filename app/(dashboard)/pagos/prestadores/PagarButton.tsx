@@ -9,18 +9,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { pagarPrestadorAction } from "./actions";
+import { pagarPrestadorAction, type PaymentSourceKind } from "./actions";
 
 type Account = { id: string; name: string };
 
 type Props = {
-  eventProviderId: string;
+  kind: PaymentSourceKind;
+  id: string;
   amount: number;
   description: string;
   accounts: Account[];
 };
 
-export function PagarButton({ eventProviderId, amount, description, accounts }: Props) {
+export function PagarButton({ kind, id, amount, description, accounts }: Props) {
   const [open, setOpen] = useState(false);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export function PagarButton({ eventProviderId, amount, description, accounts }: 
   async function handle() {
     setLoading(true);
     setError(null);
-    const result = await pagarPrestadorAction(eventProviderId, amount, accountId, description);
+    const result = await pagarPrestadorAction(kind, id, amount, accountId, description);
     setLoading(false);
     if (!result.ok) setError(result.error ?? "Error");
     else setOpen(false);

@@ -92,17 +92,20 @@ export async function payStaff(eventStaffId: string, movement: MovementFormValue
   return created;
 }
 
-export async function getProveedorPayments(opts: {
+// Service-backed prestador payments: a service used on an event is owed to the
+// prestador that backs it (service.prestadorId), amount = service.cost * qty.
+// Feeds the unified Pago prestadores page alongside getProviderPayments.
+export async function getServicePrestadorPayments(opts: {
   from?: Date;
   to?: Date;
-  proveedorId?: string;
+  prestadorId?: string;
   paid?: boolean;
 }) {
   return prisma.eventService.findMany({
     where: {
       service: {
-        proveedorId: opts.proveedorId
-          ? opts.proveedorId
+        prestadorId: opts.prestadorId
+          ? opts.prestadorId
           : { not: null },
       },
       ...(opts.paid !== undefined ? { paid: opts.paid } : {}),
@@ -115,7 +118,7 @@ export async function getProveedorPayments(opts: {
     },
     include: {
       event: true,
-      service: { include: { proveedor: true } },
+      service: { include: { prestador: true } },
     },
     orderBy: { event: { startAt: "asc" } },
   });

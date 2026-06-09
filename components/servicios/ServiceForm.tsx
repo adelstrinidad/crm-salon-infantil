@@ -12,16 +12,16 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
-type Proveedor = { id: string; name: string };
+type Prestador = { id: string; name: string; role?: string | null };
 
 type ServiceFormProps = {
   onSubmit: (data: ServiceFormInput) => Promise<{ ok: boolean; error?: string }>;
   defaultValues?: Partial<ServiceFormInput>;
   submitLabel: string;
-  proveedores?: Proveedor[];
+  prestadores?: Prestador[];
 };
 
-export function ServiceForm({ onSubmit, defaultValues, submitLabel, proveedores = [] }: ServiceFormProps) {
+export function ServiceForm({ onSubmit, defaultValues, submitLabel, prestadores = [] }: ServiceFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -69,13 +69,13 @@ export function ServiceForm({ onSubmit, defaultValues, submitLabel, proveedores 
         </div>
       </div>
 
-      {proveedores.length > 0 && (
+      {prestadores.length > 0 && (
         <div className="space-y-1">
-          <Label htmlFor="proveedorId">Proveedor externo</Label>
-          <NativeSelect id="proveedorId" {...register("proveedorId")}>
-            <option value="">Sin proveedor</option>
-            {proveedores.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+          <Label htmlFor="prestadorId">Prestador</Label>
+          <NativeSelect id="prestadorId" {...register("prestadorId")}>
+            <option value="">Sin prestador</option>
+            {prestadores.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}{p.role ? ` (${p.role})` : ""}</option>
             ))}
           </NativeSelect>
         </div>

@@ -78,7 +78,6 @@ model Proveedor {
   email       String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  services    Service[]
 }
 
 // ─── Service catalog ─────────────────────────────────────────────────────────
@@ -88,14 +87,14 @@ model Service {
   description  String?
   cost         Int            @default(0)  // what the venue pays, in cents
   price        Int            @default(0)  // what the client pays, in cents
-  proveedorId  String?
+  prestadorId  String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  proveedor    Proveedor?     @relation(fields: [proveedorId], references: [id])
+  prestador    Provider?      @relation(fields: [prestadorId], references: [id])
   events       EventService[]
   bonificados  EventBonificado[] @relation("BonificadoService")
 
-  @@index([proveedorId])
+  @@index([prestadorId])
 }
 
 // ─── Event ↔ Service join ─────────────────────────────────────────────────────
@@ -135,6 +134,7 @@ model Provider {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
   events    EventProvider[]
+  services  Service[]
 }
 
 // ─── Event ↔ Provider join ────────────────────────────────────────────────────

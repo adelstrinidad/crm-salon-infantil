@@ -31,3 +31,7 @@ export const STAFF_COST = {
 
 // Per-event provider cost (snapshotted from the catalog) → owed on Pago prestadores.
 export const PROVIDER_PAYMENT = { costPesos: "1500", owed: 1500 } as const;
+
+// Service backed by a prestador: the service cost is owed to that prestador when
+// the service is used on an event → appears on Pago prestadores (service kind).
+export const SERVICE_PRESTADOR = { serviceCostPesos: "2000", owed: 2000 } as const;
