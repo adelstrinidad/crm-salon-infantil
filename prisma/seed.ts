@@ -33,47 +33,54 @@ async function main() {
     accounts[a.name] = acc.id;
   }
 
-  // ─── Proveedores ──────────────────────────────────────────────────────────
+  // ─── Proveedores (insumos — supplies not tied to events) ────────────────────
+  // Suppliers of consumables (gaseosas, gas, baño). Their purchasing/stock flow
+  // is a later phase; here they just seed the catalog. NOT linked to services.
   const proveedorSeed = [
-    { name: "Pastelería Dulce", phone: "+54 11 1111-1111" },
-    { name: "Decoradora Magia", phone: "+54 11 2222-2222" },
-    { name: "Catering Sabores", phone: "+54 11 3333-3333" },
+    { name: "Distribuidora Gaseosas", phone: "+54 11 1111-1111" },
+    { name: "Gas del Sur", phone: "+54 11 2222-2222" },
+    { name: "Insumos Baño SRL", phone: "+54 11 3333-3333" },
   ];
-  const proveedores: Record<string, string> = {};
   for (const p of proveedorSeed) {
     const existing = await prisma.proveedor.findFirst({ where: { name: p.name } });
-    const prov = existing ?? (await prisma.proveedor.create({ data: p }));
-    proveedores[p.name] = prov.id;
+    if (!existing) await prisma.proveedor.create({ data: p });
   }
 
-  // ─── Services ─────────────────────────────────────────────────────────────
-  // Money is stored in cents (centavos).
-  const serviceSeed = [
-    { name: "Salón (3 hs)", cost: 500000, price: 2500000, proveedorId: null },
-    { name: "Torta temática", cost: 800000, price: 1800000, proveedorId: proveedores["Pastelería Dulce"] },
-    { name: "Decoración con globos", cost: 400000, price: 1200000, proveedorId: proveedores["Decoradora Magia"] },
-    { name: "Catering kids", cost: 600000, price: 1500000, proveedorId: proveedores["Catering Sabores"] },
-    { name: "Animación", cost: 0, price: 1000000, proveedorId: null },
-    { name: "Fotografía", cost: 0, price: 1400000, proveedorId: null },
-  ];
-  const services: Record<string, string> = {};
-  for (const s of serviceSeed) {
-    const existing = await prisma.service.findFirst({ where: { name: s.name } });
-    const svc = existing ?? (await prisma.service.create({ data: s }));
-    services[s.name] = svc.id;
-  }
-
-  // ─── Providers (staff) ────────────────────────────────────────────────────
+  // ─── Prestadores (Provider — external service providers + direct assignees) ──
+  // Includes both directly-assignable prestadores (DJ, animadora) and the ones
+  // that back a service (catering, decoración, repostería). Created before
+  // services because a service may reference its backing prestador.
   const providerSeed = [
     { name: "Lucas Pérez", role: "DJ", cost: 800000 },
     { name: "Mariana Gómez", role: "Animadora", cost: 700000 },
     { name: "Carlos Ruiz", role: "Fotógrafo", cost: 1000000 },
+    { name: "Pastelería Dulce", role: "Repostería", cost: 800000 },
+    { name: "Decoradora Magia", role: "Decoración", cost: 400000 },
+    { name: "Catering Sabores", role: "Catering", cost: 600000 },
   ];
   const providers: Record<string, string> = {};
   for (const p of providerSeed) {
     const existing = await prisma.provider.findFirst({ where: { name: p.name } });
     const prov = existing ?? (await prisma.provider.create({ data: p }));
     providers[p.name] = prov.id;
+  }
+
+  // ─── Services ─────────────────────────────────────────────────────────────
+  // Money is stored in cents (centavos). A service may be backed by a prestador
+  // (its cost is what the venue owes that prestador when the service is used).
+  const serviceSeed = [
+    { name: "Salón (3 hs)", cost: 500000, price: 2500000, prestadorId: null },
+    { name: "Torta temática", cost: 800000, price: 1800000, prestadorId: providers["Pastelería Dulce"] },
+    { name: "Decoración con globos", cost: 400000, price: 1200000, prestadorId: providers["Decoradora Magia"] },
+    { name: "Catering kids", cost: 600000, price: 1500000, prestadorId: providers["Catering Sabores"] },
+    { name: "Animación", cost: 0, price: 1000000, prestadorId: null },
+    { name: "Fotografía", cost: 0, price: 1400000, prestadorId: null },
+  ];
+  const services: Record<string, string> = {};
+  for (const s of serviceSeed) {
+    const existing = await prisma.service.findFirst({ where: { name: s.name } });
+    const svc = existing ?? (await prisma.service.create({ data: s }));
+    services[s.name] = svc.id;
   }
 
   // ─── Staff (internal hourly-paid employees) ───────────────────────────────

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getService } from "@/lib/services/serviceService";
-import { listProveedores } from "@/lib/proveedores/proveedorService";
+import { listProviders } from "@/lib/providers/providerService";
 import { ServiceForm } from "@/components/servicios/ServiceForm";
 import { updateServiceAction } from "../../actions";
 import type { ServiceFormInput } from "@/lib/services/schema";
@@ -11,9 +11,9 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function EditarServicioPage({ params }: Props) {
   const { id } = await params;
-  const [service, proveedores] = await Promise.all([
+  const [service, prestadores] = await Promise.all([
     getService(id).catch(() => null),
-    listProveedores(),
+    listProviders(),
   ]);
   if (!service) return notFound();
 
@@ -22,7 +22,7 @@ export default async function EditarServicioPage({ params }: Props) {
     description: service.description ?? "",
     cost: String(centsToPesos(service.cost)),
     price: String(centsToPesos(service.price)),
-    proveedorId: service.proveedorId ?? "",
+    prestadorId: service.prestadorId ?? "",
   };
 
   async function handleSubmit(data: ServiceFormInput) {
@@ -33,7 +33,7 @@ export default async function EditarServicioPage({ params }: Props) {
   return (
     <div>
       <PageHeader title="Editar servicio" />
-      <ServiceForm onSubmit={handleSubmit} defaultValues={defaultValues} submitLabel="Guardar cambios" proveedores={proveedores} />
+      <ServiceForm onSubmit={handleSubmit} defaultValues={defaultValues} submitLabel="Guardar cambios" prestadores={prestadores} />
     </div>
   );
 }

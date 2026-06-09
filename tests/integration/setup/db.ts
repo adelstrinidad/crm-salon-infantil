@@ -5,7 +5,7 @@ export { prisma };
 // Wipe every table between tests so each test starts from a known-empty DB.
 // Order matters: delete children (rows with foreign keys) before their parents.
 //   Movement → eventId/accountId    EventService/Bonificado/Provider → eventId/serviceId/providerId
-//   Event → clientId                 Service → proveedorId
+//   Event → clientId                 Service → prestadorId (Provider)
 export async function resetDb() {
   await prisma.movement.deleteMany();
   await prisma.eventService.deleteMany();
@@ -76,7 +76,7 @@ export function makeService(
     description: string;
     cost: number;
     price: number;
-    proveedorId: string;
+    prestadorId: string;
   }> = {}
 ) {
   return prisma.service.create({

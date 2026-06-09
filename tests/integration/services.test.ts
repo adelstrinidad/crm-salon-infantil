@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { resetDb, makeService, makeProveedor } from "./setup/db";
+import { resetDb, makeService, makeProvider } from "./setup/db";
 import { listServicesFiltered } from "@/lib/services/serviceService";
 
 // Integration tests for the service list query the UI uses (filtered + sorted +
@@ -20,19 +20,19 @@ describe("listServicesFiltered", () => {
     expect(rows.map((r) => r.name).sort()).toEqual(["Animación infantil", "Otro"]);
   });
 
-  it("filters by proveedorId (exact)", async () => {
-    const prov = await makeProveedor({ name: "Proveedor A" });
-    await makeService({ name: "Con proveedor", proveedorId: prov.id });
-    await makeService({ name: "Sin proveedor" });
+  it("filters by prestadorId (exact)", async () => {
+    const prestador = await makeProvider({ name: "Prestador A" });
+    await makeService({ name: "Con prestador", prestadorId: prestador.id });
+    await makeService({ name: "Sin prestador" });
 
     const { rows, total } = await listServicesFiltered({
-      proveedorId: prov.id,
+      prestadorId: prestador.id,
       skip: 0,
       take: 10,
     });
     expect(total).toBe(1);
-    expect(rows[0].name).toBe("Con proveedor");
-    expect(rows[0].proveedor?.name).toBe("Proveedor A");
+    expect(rows[0].name).toBe("Con prestador");
+    expect(rows[0].prestador?.name).toBe("Prestador A");
   });
 
   it("sorts by price descending when requested", async () => {

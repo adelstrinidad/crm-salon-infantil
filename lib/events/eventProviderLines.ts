@@ -5,7 +5,7 @@ export async function getEventWithAll(id: string) {
     where: { id },
     include: {
       services: {
-        include: { service: { include: { proveedor: true } } },
+        include: { service: { include: { prestador: true } } },
         orderBy: { service: { name: "asc" } },
       },
       providers: {

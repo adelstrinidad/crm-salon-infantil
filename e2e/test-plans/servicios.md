@@ -14,7 +14,8 @@ inputs (spinbutton role); the form parses pesos → cents on submit.
 | 3 | Edit a service → cost/price changes persist | `@regression` | ☐ todo |
 | 4 | Delete a service → removed from list | `@destructive` | ☐ todo |
 | 5 | Search filters the list to matching services | `@regression` | ☐ todo |
-| 6 | Filter by proveedor narrows the list | `@regression` | ☐ todo |
+| 6 | Filter by prestador narrows the list | `@regression` | ☐ todo |
 | 7 | Ganancia column equals price − cost | `@regression` | ☐ todo |
+| 8 | Assign a prestador to a service (NativeSelect) → drives Pago prestadores | `@e2e` | ✅ covered in `pagos/e2e/pago-prestador-servicio.spec.ts` |
 
 **Out of scope:** API-level validation (no REST API — server actions only).

@@ -6,7 +6,7 @@ export const serviceFormInputSchema = z.object({
   description: z.string().optional(),
   cost: z.string(),
   price: z.string(),
-  proveedorId: z.string().optional(),
+  prestadorId: z.string().optional(),
 });
 
 export type ServiceFormInput = z.infer<typeof serviceFormInputSchema>;
@@ -16,7 +16,7 @@ export const serviceSchema = serviceFormInputSchema.transform((data) => ({
   description: data.description || null,
   cost: parsePesosToCents(data.cost),
   price: parsePesosToCents(data.price),
-  proveedorId: data.proveedorId || null,
+  prestadorId: data.prestadorId || null,
 }));
 
 export type ServiceFormValues = z.output<typeof serviceSchema>;

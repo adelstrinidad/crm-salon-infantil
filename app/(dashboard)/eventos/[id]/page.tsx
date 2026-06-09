@@ -199,7 +199,7 @@ export default async function EventoDetailPage({ params }: Props) {
               <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
                 <tr>
                   <th className="px-3 py-2 text-left">Nombre</th>
-                  <th className="px-3 py-2 text-left">Proveedor</th>
+                  <th className="px-3 py-2 text-left">Prestador</th>
                   <th className="px-3 py-2 text-center">Cant.</th>
                   <th className="px-3 py-2 text-right">Costo/u</th>
                   <th className="px-3 py-2 text-right">Precio/u</th>
@@ -210,7 +210,7 @@ export default async function EventoDetailPage({ params }: Props) {
                 {event.services.map((l) => (
                   <tr key={l.id} className="hover:bg-muted/40 transition-colors">
                     <td className="px-3 py-2 font-medium">{l.service.name}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{l.service.proveedor?.name ?? "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{l.service.prestador?.name ?? "—"}</td>
                     <td className="px-3 py-2 text-center">{l.qty}</td>
                     <td className="px-3 py-2 text-right">{fmt(l.service.cost)}</td>
                     <td className="px-3 py-2 text-right">{fmt(l.service.price)}</td>

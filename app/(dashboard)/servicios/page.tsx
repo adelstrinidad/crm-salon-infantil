@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Plus, Sparkles, Search } from "lucide-react";
 import { listServicesFiltered } from "@/lib/services/serviceService";
-import { listProveedores } from "@/lib/proveedores/proveedorService";
+import { listProviders } from "@/lib/providers/providerService";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,7 @@ type Props = {
   searchParams: Promise<{
     page?: string;
     q?: string;
-    proveedorId?: string;
+    prestadorId?: string;
     sort?: string;
   }>;
 };
@@ -30,25 +30,25 @@ export default async function ServiciosPage({ searchParams }: Props) {
   const pageParams = parsePage(params.page, 15);
   const sort = params.sort || DEFAULT_SERVICE_SORT;
 
-  const [{ rows, total }, proveedores] = await Promise.all([
+  const [{ rows, total }, prestadores] = await Promise.all([
     listServicesFiltered({
       q: params.q || undefined,
-      proveedorId: params.proveedorId || undefined,
+      prestadorId: params.prestadorId || undefined,
       sort,
       skip: pageParams.skip,
       take: pageParams.take,
     }),
-    listProveedores(),
+    listProviders(),
   ]);
   const { rows: services, page, pageCount } = buildPaginated(rows, total, pageParams);
 
   // Filters that should be preserved across pager links.
   const filterQuery = {
     q: params.q,
-    proveedorId: params.proveedorId,
+    prestadorId: params.prestadorId,
     sort: params.sort,
   };
-  const hasFilters = Boolean(params.q || params.proveedorId);
+  const hasFilters = Boolean(params.q || params.prestadorId);
 
   return (
     <div className="space-y-6">
@@ -78,12 +78,12 @@ export default async function ServiciosPage({ searchParams }: Props) {
             </div>
           </div>
           <div className="space-y-1 w-full sm:w-44">
-            <label className="text-sm font-medium">Proveedor</label>
+            <label className="text-sm font-medium">Prestador</label>
             <SelectFilter
-              name="proveedorId"
-              defaultValue={params.proveedorId ?? ""}
+              name="prestadorId"
+              defaultValue={params.prestadorId ?? ""}
               allLabel="Todos"
-              options={proveedores.map((p) => ({ value: p.id, label: p.name }))}
+              options={prestadores.map((p) => ({ value: p.id, label: p.name }))}
             />
           </div>
           <div className="space-y-1 w-full sm:w-52">
@@ -128,7 +128,7 @@ export default async function ServiciosPage({ searchParams }: Props) {
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Nombre</th>
                   <th className="px-4 py-3 text-left font-medium">Descripción</th>
-                  <th className="px-4 py-3 text-left font-medium">Proveedor</th>
+                  <th className="px-4 py-3 text-left font-medium">Prestador</th>
                   <th className="px-4 py-3 text-left font-medium">Costo</th>
                   <th className="px-4 py-3 text-left font-medium">Precio</th>
                   <th className="px-4 py-3 text-left font-medium">Ganancia</th>
@@ -142,7 +142,7 @@ export default async function ServiciosPage({ searchParams }: Props) {
                     <td className="px-4 py-3 text-muted-foreground text-xs max-w-[200px] truncate">
                       {s.description ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{s.proveedor?.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{s.prestador?.name ?? "—"}</td>
                     <td className="px-4 py-3">{formatMoney(s.cost)}</td>
                     <td className="px-4 py-3">{formatMoney(s.price)}</td>
                     <td className="px-4 py-3">{formatMoney(s.price - s.cost)}</td>
@@ -173,7 +173,7 @@ export default async function ServiciosPage({ searchParams }: Props) {
                     <p className="mt-0.5 text-sm text-muted-foreground truncate">{s.description}</p>
                   )}
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {s.proveedor?.name ?? "Sin proveedor"}
+                    {s.prestador?.name ?? "Sin prestador"}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                     <span className="text-muted-foreground">Costo {formatMoney(s.cost)}</span>

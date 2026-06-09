@@ -4,7 +4,6 @@ import {
   resetDb,
   makeEvent,
   makeProvider,
-  makeProveedor,
   makeService,
   makeStaff,
   makeAccount,
@@ -12,7 +11,7 @@ import {
 import {
   getProviderPayments,
   markProviderPaid,
-  getProveedorPayments,
+  getServicePrestadorPayments,
   markServicePaid,
   payProvider,
   payService,
@@ -68,15 +67,15 @@ async function eventWithStaff(
   return { event, staff, link };
 }
 
-// An event with one service line whose service has a proveedor.
-async function eventWithProveedorService(startAt = new Date("2026-06-10T15:00:00")) {
+// An event with one service line whose service is backed by a prestador.
+async function eventWithPrestadorService(startAt = new Date("2026-06-10T15:00:00")) {
   const event = await makeEvent({ startAt });
-  const proveedor = await makeProveedor();
-  const service = await makeService({ cost: 30000, proveedorId: proveedor.id });
+  const prestador = await makeProvider();
+  const service = await makeService({ cost: 30000, prestadorId: prestador.id });
   const link = await prisma.eventService.create({
     data: { eventId: event.id, serviceId: service.id, qty: 1 },
   });
-  return { event, proveedor, service, link };
+  return { event, prestador, service, link };
 }
 
 describe("getProviderPayments / markProviderPaid", () => {
@@ -127,39 +126,39 @@ describe("getProviderPayments / markProviderPaid", () => {
   });
 });
 
-describe("getProveedorPayments / markServicePaid", () => {
-  it("lists only service lines whose service has a proveedor", async () => {
-    await eventWithProveedorService();
-    // A service WITHOUT a proveedor must NOT appear.
+describe("getServicePrestadorPayments / markServicePaid", () => {
+  it("lists only service lines whose service is backed by a prestador", async () => {
+    await eventWithPrestadorService();
+    // A service WITHOUT a prestador must NOT appear.
     const event = await makeEvent();
-    const noVendor = await makeService({}); // proveedorId null
-    await prisma.eventService.create({ data: { eventId: event.id, serviceId: noVendor.id, qty: 1 } });
+    const noPrestador = await makeService({}); // prestadorId null
+    await prisma.eventService.create({ data: { eventId: event.id, serviceId: noPrestador.id, qty: 1 } });
 
-    const rows = await getProveedorPayments({});
+    const rows = await getServicePrestadorPayments({});
     expect(rows).toHaveLength(1);
-    expect(rows[0].service.proveedor).toBeTruthy();
+    expect(rows[0].service.prestador).toBeTruthy();
   });
 
-  it("filters by proveedorId", async () => {
-    const a = await eventWithProveedorService();
-    await eventWithProveedorService();
-    const rows = await getProveedorPayments({ proveedorId: a.proveedor.id });
+  it("filters by prestadorId", async () => {
+    const a = await eventWithPrestadorService();
+    await eventWithPrestadorService();
+    const rows = await getServicePrestadorPayments({ prestadorId: a.prestador.id });
     expect(rows).toHaveLength(1);
-    expect(rows[0].service.proveedorId).toBe(a.proveedor.id);
+    expect(rows[0].service.prestadorId).toBe(a.prestador.id);
   });
 
   it("filters by paid status", async () => {
-    const { link } = await eventWithProveedorService();
-    await eventWithProveedorService();
+    const { link } = await eventWithPrestadorService();
+    await eventWithPrestadorService();
     await markServicePaid(link.id);
 
-    const paid = await getProveedorPayments({ paid: true });
+    const paid = await getServicePrestadorPayments({ paid: true });
     expect(paid).toHaveLength(1);
     expect(paid[0].id).toBe(link.id);
   });
 
   it("marks a service line paid with a timestamp", async () => {
-    const { link } = await eventWithProveedorService();
+    const { link } = await eventWithPrestadorService();
     const updated = await markServicePaid(link.id);
     expect(updated.paid).toBe(true);
     expect(updated.paidAt).toBeInstanceOf(Date);
@@ -258,7 +257,7 @@ describe("payStaff — atomic settlement", () => {
 
 describe("payService — atomic settlement", () => {
   it("marks paid AND records the EGRESO movement together", async () => {
-    const { link } = await eventWithProveedorService();
+    const { link } = await eventWithPrestadorService();
     const account = await makeAccount();
 
     await payService(link.id, egresoFor(account.id, 30000));
@@ -272,7 +271,7 @@ describe("payService — atomic settlement", () => {
   });
 
   it("rolls back the paid flag when the movement creation fails", async () => {
-    const { link } = await eventWithProveedorService();
+    const { link } = await eventWithPrestadorService();
     await expect(payService(link.id, egresoFor("nonexistent-account-id"))).rejects.toThrow();
 
     const row = await prisma.eventService.findUniqueOrThrow({ where: { id: link.id } });
