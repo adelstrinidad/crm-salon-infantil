@@ -25,6 +25,7 @@ type PaymentRow = {
   prestadorRole: string | null;
   eventName: string;
   eventStartAt: Date;
+  createdAt: Date;
   amount: number;
   paid: boolean;
   paidAt: Date | null;
@@ -69,6 +70,7 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
       prestadorRole: r.provider.role,
       eventName: r.event.name,
       eventStartAt: r.event.startAt,
+      createdAt: r.createdAt,
       amount: r.cost,
       paid: r.paid,
       paidAt: r.paidAt,
@@ -82,6 +84,7 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
       prestadorRole: r.service.prestador!.role,
       eventName: r.event.name,
       eventStartAt: r.event.startAt,
+      createdAt: r.createdAt,
       amount: r.service.cost * r.qty,
       paid: r.paid,
       paidAt: r.paidAt,
@@ -161,7 +164,9 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
                 <th className="px-4 py-3 text-left">Prestador</th>
                 <th className="px-4 py-3 text-left">Evento</th>
                 <th className="px-4 py-3 text-left">Fecha evento</th>
+                <th className="px-4 py-3 text-left">Fecha de alta</th>
                 <th className="px-4 py-3 text-right">Monto</th>
+                <th className="px-4 py-3 text-left">Fecha de pago</th>
                 <th className="px-4 py-3 text-left">Estado</th>
                 <th className="px-4 py-3 text-left">Acción</th>
               </tr>
@@ -177,11 +182,17 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
                   <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
                     {new Date(r.eventStartAt).toLocaleDateString("es-AR")}
                   </td>
+                  <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                    {new Date(r.createdAt).toLocaleDateString("es-AR")}
+                  </td>
                   <td className="px-4 py-2 text-right font-medium">{fmt(r.amount)}</td>
+                  <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                    {r.paidAt ? new Date(r.paidAt).toLocaleDateString("es-AR") : "—"}
+                  </td>
                   <td className="px-4 py-2">
                     {r.paid ? (
                       <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
-                        Pagado {r.paidAt ? new Date(r.paidAt).toLocaleDateString("es-AR") : ""}
+                        Pagado
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2.5 py-0.5 text-xs font-medium">

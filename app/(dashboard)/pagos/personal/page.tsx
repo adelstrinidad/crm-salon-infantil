@@ -116,8 +116,10 @@ export default async function PagosPersonalPage({ searchParams }: Props) {
                 <th className="px-4 py-3 text-left">Empleado</th>
                 <th className="px-4 py-3 text-left">Evento</th>
                 <th className="px-4 py-3 text-left">Fecha evento</th>
+                <th className="px-4 py-3 text-left">Fecha de alta</th>
                 <th className="px-4 py-3 text-right">Horas reales</th>
                 <th className="px-4 py-3 text-right">Monto</th>
+                <th className="px-4 py-3 text-left">Fecha de pago</th>
                 <th className="px-4 py-3 text-left">Estado</th>
                 <th className="px-4 py-3 text-left">Acción</th>
               </tr>
@@ -137,14 +139,20 @@ export default async function PagosPersonalPage({ searchParams }: Props) {
                     <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
                       {new Date(r.event.startAt).toLocaleDateString("es-AR")}
                     </td>
+                    <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                      {new Date(r.createdAt).toLocaleDateString("es-AR")}
+                    </td>
                     <td className="px-4 py-2 text-right whitespace-nowrap">
                       {registered ? `${formatHHMM(r.actualMinutes)} hs` : "—"}
                     </td>
                     <td className="px-4 py-2 text-right font-medium">{fmt(amountOf(r))}</td>
+                    <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                      {r.paidAt ? new Date(r.paidAt).toLocaleDateString("es-AR") : "—"}
+                    </td>
                     <td className="px-4 py-2">
                       {r.paid ? (
                         <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
-                          Pagado {r.paidAt ? new Date(r.paidAt).toLocaleDateString("es-AR") : ""}
+                          Pagado
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2.5 py-0.5 text-xs font-medium">
