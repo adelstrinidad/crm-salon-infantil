@@ -233,3 +233,25 @@ model Movement {
   @@index([accountId])
   @@index([toAccountId])
 }
+
+// ─── Audit: removed event lines ───────────────────────────────────────────────
+// Append-only snapshot taken when a provider/service/staff line is removed from
+// an event. The live join row is deleted physically (financials/reports stay
+// simple); this table keeps the history so the pago tables can show "Eliminado".
+// No FK to Event — the snapshot must survive event deletion.
+model RemovedEventLine {
+  id                String    @id @default(cuid())
+  kind              String    // "provider" | "service" | "staff"
+  eventId           String    // loose ref (no FK), for grouping
+  eventName         String    // snapshot
+  entityName        String    // provider/staff/service name snapshot
+  entityRole        String?   // provider/staff role snapshot
+  amount            Int       // cents at removal time
+  paid              Boolean   @default(false)
+  paidAt            DateTime?
+  originalCreatedAt DateTime  // the removed line's createdAt
+  removedAt         DateTime  @default(now())
+
+  @@index([kind])
+  @@index([eventId])
+}

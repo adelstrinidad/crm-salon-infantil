@@ -122,6 +122,23 @@ export class EventoEditPage {
   }
 
   /**
+   * Remove an attached provider from the event (the row's "Quitar" button).
+   * @param {string} providerName - Provider name identifying the row.
+   * @returns {Promise<void>}
+   */
+  async removeProvider(providerName: string): Promise<void> {
+    const quitar = this.page
+      .getByRole("row")
+      .filter({ hasText: providerName })
+      .getByRole("button", { name: "Quitar" });
+    await quitar.click();
+    // Wait for the attached-row to detach (removal committed + re-render). The
+    // name reappears in the "Agregar prestador" dropdown, so don't assert on the
+    // whole page — only that this row's Quitar is gone.
+    await expect(quitar).toHaveCount(0);
+  }
+
+  /**
    * Log real worked hours on a staff assignment card and save them.
    * @param {string} staffName - Staff name (identifies the card).
    * @param {string} hours - Whole hours.

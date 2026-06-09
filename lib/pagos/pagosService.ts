@@ -124,6 +124,26 @@ export async function getServicePrestadorPayments(opts: {
   });
 }
 
+// Removed (audited) lines for the pago tables. `kinds` selects which obligation
+// types to include (prestadores = provider+service; personal = staff). Filtered
+// by removal date range. Append-only snapshots — never paid/edited here.
+export async function getRemovedPayments(opts: {
+  kinds: string[];
+  from?: Date;
+  to?: Date;
+}) {
+  return prisma.removedEventLine.findMany({
+    where: {
+      kind: { in: opts.kinds },
+      removedAt: {
+        ...(opts.from ? { gte: opts.from } : {}),
+        ...(opts.to ? { lte: opts.to } : {}),
+      },
+    },
+    orderBy: { removedAt: "desc" },
+  });
+}
+
 export async function markServicePaid(eventServiceId: string) {
   return prisma.eventService.update({
     where: { id: eventServiceId },

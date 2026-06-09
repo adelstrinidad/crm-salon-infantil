@@ -48,8 +48,32 @@ export async function setProviderCost(eventId: string, providerId: string, cost:
   });
 }
 
+// Remove a provider from an event. Snapshots the line into the RemovedEventLine
+// audit table and deletes the live row in one transaction, so the removal is
+// tracked (shown as "Eliminado" in Pago prestadores) instead of vanishing.
 export async function removeProviderFromEvent(eventId: string, providerId: string) {
-  return prisma.eventProvider.delete({
+  const row = await prisma.eventProvider.findUnique({
     where: { eventId_providerId: { eventId, providerId } },
+    include: { provider: true, event: { select: { name: true } } },
   });
+  if (!row) return null;
+  const [, deleted] = await prisma.$transaction([
+    prisma.removedEventLine.create({
+      data: {
+        kind: "provider",
+        eventId,
+        eventName: row.event.name,
+        entityName: row.provider.name,
+        entityRole: row.provider.role,
+        amount: row.cost,
+        paid: row.paid,
+        paidAt: row.paidAt,
+        originalCreatedAt: row.createdAt,
+      },
+    }),
+    prisma.eventProvider.delete({
+      where: { eventId_providerId: { eventId, providerId } },
+    }),
+  ]);
+  return deleted;
 }

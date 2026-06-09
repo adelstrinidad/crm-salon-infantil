@@ -21,8 +21,31 @@ export async function addServiceToEvent(eventId: string, serviceId: string, qty 
   });
 }
 
+// Remove a service from an event. Snapshots the line (owed = service.cost × qty)
+// into RemovedEventLine and deletes the live row in one transaction.
 export async function removeServiceFromEvent(eventId: string, serviceId: string) {
-  return prisma.eventService.delete({
+  const row = await prisma.eventService.findUnique({
     where: { eventId_serviceId: { eventId, serviceId } },
+    include: { service: true, event: { select: { name: true } } },
   });
+  if (!row) return null;
+  const [, deleted] = await prisma.$transaction([
+    prisma.removedEventLine.create({
+      data: {
+        kind: "service",
+        eventId,
+        eventName: row.event.name,
+        entityName: row.service.name,
+        entityRole: null,
+        amount: row.service.cost * row.qty,
+        paid: row.paid,
+        paidAt: row.paidAt,
+        originalCreatedAt: row.createdAt,
+      },
+    }),
+    prisma.eventService.delete({
+      where: { eventId_serviceId: { eventId, serviceId } },
+    }),
+  ]);
+  return deleted;
 }
