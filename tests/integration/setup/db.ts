@@ -7,6 +7,7 @@ export { prisma };
 //   Movement → eventId/accountId    EventService/Bonificado/Provider → eventId/serviceId/providerId
 //   Event → clientId                 Service → prestadorId (Provider)
 export async function resetDb() {
+  await prisma.removedEventLine.deleteMany();
   await prisma.movement.deleteMany();
   await prisma.eventService.deleteMany();
   await prisma.eventBonificado.deleteMany();

@@ -1,6 +1,7 @@
 // Manage EventStaff join records: assign internal hourly staff to an event,
 // log estimated vs real working time, and track per-assignment payment.
 import { prisma } from "@/lib/prisma";
+import { staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
 
 // Assign a staff member to an event with an estimated number of minutes.
 // Upsert so re-adding updates the estimate instead of erroring on the unique
@@ -17,10 +18,38 @@ export async function addStaffToEvent(
   });
 }
 
+// Remove a staff assignment from an event. Snapshots the line (owed =
+// staffLineCost over the effective minutes) into RemovedEventLine and deletes
+// the live row in one transaction.
 export async function removeStaffFromEvent(eventId: string, staffId: string) {
-  return prisma.eventStaff.delete({
+  const row = await prisma.eventStaff.findUnique({
     where: { eventId_staffId: { eventId, staffId } },
+    include: { staff: true, event: { select: { name: true } } },
   });
+  if (!row) return null;
+  const amount = staffLineCost(
+    row.staff.hourlyRate,
+    effectiveMinutes(row.estMinutes, row.actualMinutes),
+  );
+  const [, deleted] = await prisma.$transaction([
+    prisma.removedEventLine.create({
+      data: {
+        kind: "staff",
+        eventId,
+        eventName: row.event.name,
+        entityName: row.staff.name,
+        entityRole: row.staff.role,
+        amount,
+        paid: row.paid,
+        paidAt: row.paidAt,
+        originalCreatedAt: row.createdAt,
+      },
+    }),
+    prisma.eventStaff.delete({
+      where: { eventId_staffId: { eventId, staffId } },
+    }),
+  ]);
+  return deleted;
 }
 
 // Log the real hours worked after the event. Setting this resolves the

@@ -15,6 +15,7 @@ export enum Messages {
   STAFF_COST = "Costo personal",
   PAYMENT_PENDING = "Pendiente",
   PAYMENT_PAID = "Pagado",
+  PAYMENT_DELETED = "Eliminado",
   STAFF_NEEDS_HOURS = "Registrá las horas",
   STAFF_PAYMENT_LABEL = "Pago personal —",
   COBRO_DEFAULT_LABEL = "Cobro —",
