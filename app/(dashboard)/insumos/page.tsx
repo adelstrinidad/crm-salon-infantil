@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { SortSelect } from "@/components/ui/sort-select";
+import { SelectFilter } from "@/components/ui/select-filter";
 import { Pager } from "@/components/ui/pager";
 import { parsePage, buildPaginated } from "@/lib/pagination";
 import { INSUMO_SORT_OPTIONS, DEFAULT_INSUMO_SORT } from "@/lib/insumos/listFilters";
@@ -20,6 +21,7 @@ type Props = {
     page?: string;
     q?: string;
     sort?: string;
+    estado?: string;
   }>;
 };
 
@@ -30,17 +32,19 @@ export default async function InsumosPage({ searchParams }: Props) {
   const params = await searchParams;
   const pageParams = parsePage(params.page, 15);
   const sort = params.sort || DEFAULT_INSUMO_SORT;
+  const lowStock = params.estado === "bajo";
 
   const { rows, total } = await listInsumosFiltered({
     q: params.q || undefined,
     sort,
+    lowStock,
     skip: pageParams.skip,
     take: pageParams.take,
   });
   const { rows: insumos, page, pageCount } = buildPaginated(rows, total, pageParams);
 
-  const filterQuery = { q: params.q, sort: params.sort };
-  const hasFilters = Boolean(params.q);
+  const filterQuery = { q: params.q, sort: params.sort, estado: params.estado };
+  const hasFilters = Boolean(params.q || lowStock);
 
   return (
     <div className="space-y-6">
@@ -68,6 +72,15 @@ export default async function InsumosPage({ searchParams }: Props) {
                 className="pl-9"
               />
             </div>
+          </div>
+          <div className="space-y-1 w-full sm:w-44">
+            <label className="text-sm font-medium">Stock</label>
+            <SelectFilter
+              name="estado"
+              defaultValue={params.estado ?? ""}
+              allLabel="Todos"
+              options={[{ value: "bajo", label: "Bajo stock" }]}
+            />
           </div>
           <div className="space-y-1 w-full sm:w-52">
             <label className="text-sm font-medium">Ordenar por</label>
@@ -120,7 +133,9 @@ export default async function InsumosPage({ searchParams }: Props) {
               <tbody className="divide-y divide-border/60">
                 {insumos.map((i: Insumo) => (
                   <tr key={i.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="px-4 py-3 font-medium">{i.name}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link href={`/insumos/${i.id}`} className="hover:underline">{i.name}</Link>
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{unitLabel(i.unit)}</td>
                     <td className="px-4 py-3 text-right">
                       {isLow(i) ? (
@@ -136,6 +151,12 @@ export default async function InsumosPage({ searchParams }: Props) {
                     <td className="px-4 py-3 text-muted-foreground">{i.notes ?? "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/insumos/${i.id}`}
+                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                        >
+                          Ver
+                        </Link>
                         <Link
                           href={`/insumos/${i.id}/editar`}
                           className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
@@ -157,7 +178,9 @@ export default async function InsumosPage({ searchParams }: Props) {
               <li key={i.id} className="rounded-xl border border-border bg-card shadow-sm">
                 <div className="p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium truncate">{i.name}</p>
+                    <Link href={`/insumos/${i.id}`} className="font-medium truncate hover:underline">
+                      {i.name}
+                    </Link>
                     {isLow(i) && (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
                         <AlertTriangle className="size-3" />
@@ -174,6 +197,12 @@ export default async function InsumosPage({ searchParams }: Props) {
                   </div>
                 </div>
                 <div className="flex gap-2 border-t border-border/60 px-4 py-2.5">
+                  <Link
+                    href={`/insumos/${i.id}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    Ver
+                  </Link>
                   <Link
                     href={`/insumos/${i.id}/editar`}
                     className={cn(buttonVariants({ variant: "outline", size: "sm" }))}

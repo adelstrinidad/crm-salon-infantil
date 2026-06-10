@@ -93,11 +93,33 @@ model Insumo {
   stockQty    Int          @default(0) // current on-hand count, whole units
   minStock    Int          @default(0) // low-stock alert threshold
   notes       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   compraLines CompraLine[]
+  movements   StockMovement[]
 
   @@index([name])
+}
+
+// ─── StockMovement (append-only stock ledger) ────────────────────────────────
+// Every change to an insumo's on-hand count appends one row here. `stockQty` on
+// Insumo stays the fast running count (source of truth for reads); this ledger
+// is the audit trail of HOW it got there. `delta` is signed: + adds stock
+// (compra), − removes it (consumo/merma); ajuste can be either. `compraId` links
+// the rows a purchase generated (cascade-removed if the compra is deleted).
+model StockMovement {
+  id        String   @id @default(cuid())
+  insumoId  String
+  kind      String // "compra" | "consumo" | "ajuste" | "merma"
+  delta     Int // signed units: + in, − out
+  reason    String?
+  compraId  String?
+  createdAt DateTime @default(now())
+  insumo    Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+  compra    Compra?  @relation(fields: [compraId], references: [id], onDelete: Cascade)
+
+  @@index([insumoId])
+  @@index([kind])
 }
 
 // ─── Compra (purchase of insumos from a Proveedor) ───────────────────────────
@@ -116,8 +138,9 @@ model Compra {
   notes       String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  proveedor   Proveedor    @relation(fields: [proveedorId], references: [id])
+  proveedor   Proveedor       @relation(fields: [proveedorId], references: [id])
   lines       CompraLine[]
+  stockMoves  StockMovement[]
 
   @@index([proveedorId])
   @@index([paid])

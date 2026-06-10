@@ -42,4 +42,14 @@ export class InsumosListPage {
   rowByName(name: string): Locator {
     return this.page.getByRole("cell", { name: new RegExp(name) });
   }
+
+  /**
+   * Open a supply's detail page by clicking its name link.
+   * @param {string} name - Supply name.
+   * @returns {Promise<void>}
+   */
+  async openDetail(name: string): Promise<void> {
+    await this.page.getByRole("link", { name }).first().click();
+    await this.page.waitForURL(/\/insumos\/[^/]+$/);
+  }
 }

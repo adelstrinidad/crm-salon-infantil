@@ -14,17 +14,18 @@ export async function listInsumos() {
 export async function listInsumosFiltered(opts: {
   q?: string;
   sort?: string;
+  lowStock?: boolean;
   skip: number;
   take: number;
 }) {
-  const where: Prisma.InsumoWhereInput = opts.q
-    ? {
-        OR: [
-          { name: { contains: opts.q } },
-          { notes: { contains: opts.q } },
-        ],
-      }
-    : {};
+  const where: Prisma.InsumoWhereInput = {
+    ...(opts.q
+      ? { OR: [{ name: { contains: opts.q } }, { notes: { contains: opts.q } }] }
+      : {}),
+    // Low-stock: on-hand at or below the alert threshold. Field-reference compare
+    // (stockQty ≤ minStock) keeps the filter in SQL so pagination stays correct.
+    ...(opts.lowStock ? { stockQty: { lte: prisma.insumo.fields.minStock } } : {}),
+  };
 
   const { field, dir } = parseInsumoSort(opts.sort);
 

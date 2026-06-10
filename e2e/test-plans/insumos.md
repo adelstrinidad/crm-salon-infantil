@@ -18,7 +18,14 @@ when `stockQty <= minStock`.
 | 5 | Search filters the list to matching supplies | `@regression` | ☐ todo |
 | 6 | Low-stock badge shows when stock ≤ mínimo | `@regression` | ☐ todo |
 | 7 | Reject negative / non-integer stock | `@regression` | ☐ todo |
+| 8 | Record a consumo → count drops + ledger row appears | `@e2e` | ✅ automated |
+| 9 | Negative-driving adjustment is rejected | `@regression` | ☐ todo (covered by integration) |
+| 10 | "Bajo stock" filter shows only insumos ≤ mínimo | `@regression` | ☐ todo |
 
-**Out of scope (later phases):** purchases (Compra) that raise stock, supplier
-payments wired to `/pagos/proveedores`, consumption/stock-movement audit. API-level
+**Stock detail page** (`/insumos/[id]`): current count + low badge, "Ajustar stock"
+form (Consumo/Merma/Ajuste±, Radix `Select` aria-label "Tipo de ajuste"), and the
+StockMovement ledger. Compra entries appear here as "Compra" rows.
+
+**Out of scope (done in earlier/this phase, or later):** purchases (see
+`compras.md`), supplier payments wired to `/pagos/proveedores` (done). API-level
 validation (no REST API — server actions only).

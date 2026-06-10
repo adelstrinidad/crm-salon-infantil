@@ -4,6 +4,7 @@ import type { MovementFormValues } from "@/lib/finanzas/schema";
 import type { CompraValues } from "./schema";
 import { computeCompraTotal } from "./calc";
 import { parseCompraSort } from "./listFilters";
+import { applyStockMovement } from "@/lib/stock/stockService";
 
 // Record a purchase. Atomically: create the Compra + its lines, and raise each
 // line's insumo stock by the purchased qty. The total is derived from the lines
@@ -28,9 +29,11 @@ export async function createCompra(data: CompraValues) {
       },
     });
     for (const l of data.lines) {
-      await tx.insumo.update({
-        where: { id: l.insumoId },
-        data: { stockQty: { increment: l.qty } },
+      await applyStockMovement(tx, {
+        insumoId: l.insumoId,
+        kind: "compra",
+        delta: l.qty,
+        compraId: compra.id,
       });
     }
     return compra;

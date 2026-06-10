@@ -15,6 +15,7 @@ import { ProveedoresListPage } from "../../pages/proveedores/proveedores-list.pa
 import { ProveedorFormPage } from "../../pages/proveedores/proveedor-form.page";
 import { InsumosListPage } from "../../pages/insumos/insumos-list.page";
 import { InsumoFormPage } from "../../pages/insumos/insumo-form.page";
+import { InsumoDetailPage } from "../../pages/insumos/insumo-detail.page";
 import { ComprasListPage } from "../../pages/compras/compras-list.page";
 import { CompraFormPage } from "../../pages/compras/compra-form.page";
 import { EventoFormPage } from "../../pages/eventos/evento-form.page";
@@ -49,6 +50,7 @@ export type PageObjectFixtures = {
   proveedorFormPage: ProveedorFormPage;
   insumosListPage: InsumosListPage;
   insumoFormPage: InsumoFormPage;
+  insumoDetailPage: InsumoDetailPage;
   comprasListPage: ComprasListPage;
   compraFormPage: CompraFormPage;
   eventoFormPage: EventoFormPage;
@@ -113,6 +115,9 @@ export const test = base.extend<PageObjectFixtures>({
   },
   insumoFormPage: async ({ page }, use) => {
     await use(new InsumoFormPage(page));
+  },
+  insumoDetailPage: async ({ page }, use) => {
+    await use(new InsumoDetailPage(page));
   },
   comprasListPage: async ({ page }, use) => {
     await use(new ComprasListPage(page));
