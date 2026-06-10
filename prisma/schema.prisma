@@ -78,6 +78,87 @@ model Proveedor {
   email       String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  compras     Compra[]
+}
+
+// ─── Insumo (supply item — stock/inventory catalog) ──────────────────────────
+// A consumable the venue buys from a Proveedor (gaseosas, gas, platos, bolsas…).
+// Phase 1: master data + a plain on-hand stock count. Purchases (which raise
+// stock) and consumption arrive in later phases. Quantities are whole units;
+// `unit` records what one unit means (unidad/litro/kg/caja).
+model Insumo {
+  id          String       @id @default(cuid())
+  name        String
+  unit        String       @default("unidad")
+  stockQty    Int          @default(0) // current on-hand count, whole units
+  minStock    Int          @default(0) // low-stock alert threshold
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  compraLines CompraLine[]
+  movements   StockMovement[]
+
+  @@index([name])
+}
+
+// ─── StockMovement (append-only stock ledger) ────────────────────────────────
+// Every change to an insumo's on-hand count appends one row here. `stockQty` on
+// Insumo stays the fast running count (source of truth for reads); this ledger
+// is the audit trail of HOW it got there. `delta` is signed: + adds stock
+// (compra), − removes it (consumo/merma); ajuste can be either. `compraId` links
+// the rows a purchase generated (cascade-removed if the compra is deleted).
+model StockMovement {
+  id        String   @id @default(cuid())
+  insumoId  String
+  kind      String // "compra" | "consumo" | "ajuste" | "merma"
+  delta     Int // signed units: + in, − out
+  reason    String?
+  compraId  String?
+  createdAt DateTime @default(now())
+  insumo    Insumo   @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+  compra    Compra?  @relation(fields: [compraId], references: [id], onDelete: Cascade)
+
+  @@index([insumoId])
+  @@index([kind])
+}
+
+// ─── Compra (purchase of insumos from a Proveedor) ───────────────────────────
+// A purchase invoice: one header (proveedor, date, total) holding many lines.
+// Recording a Compra raises each line's insumo stock immediately. The Compra is
+// a payable — settled later from Pago a proveedores, which marks it paid and
+// posts an EGRESO movement (mirrors how prestador/staff payments settle).
+// `total` is derived (sum of line qty × unitCost) and persisted in cents.
+model Compra {
+  id          String       @id @default(cuid())
+  proveedorId String
+  date        DateTime     @default(now())
+  total       Int          @default(0) // cents — sum of line qty × unitCost
+  paid        Boolean      @default(false)
+  paidAt      DateTime?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  proveedor   Proveedor       @relation(fields: [proveedorId], references: [id])
+  lines       CompraLine[]
+  stockMoves  StockMovement[]
+
+  @@index([proveedorId])
+  @@index([paid])
+  @@index([date])
+}
+
+// ─── Compra ↔ Insumo line ────────────────────────────────────────────────────
+model CompraLine {
+  id       String @id @default(cuid())
+  compraId String
+  insumoId String
+  qty      Int // whole units purchased
+  unitCost Int // cents per unit at purchase time (snapshot)
+  compra   Compra @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  insumo   Insumo @relation(fields: [insumoId], references: [id])
+
+  @@index([compraId])
+  @@index([insumoId])
 }
 
 // ─── Service catalog ─────────────────────────────────────────────────────────

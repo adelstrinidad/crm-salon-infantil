@@ -17,7 +17,11 @@ export async function resetDb() {
   await prisma.service.deleteMany();
   await prisma.provider.deleteMany();
   await prisma.staff.deleteMany();
+  await prisma.stockMovement.deleteMany();
+  await prisma.compraLine.deleteMany();
+  await prisma.compra.deleteMany();
   await prisma.proveedor.deleteMany();
+  await prisma.insumo.deleteMany();
   await prisma.account.deleteMany();
   await prisma.client.deleteMany();
   await prisma.eventType.deleteMany();
@@ -68,6 +72,20 @@ export function makeProveedor(
 ) {
   return prisma.proveedor.create({
     data: { name: `Proveedor ${uniq()}`, ...overrides },
+  });
+}
+
+export function makeInsumo(
+  overrides: Partial<{
+    name: string;
+    unit: string;
+    stockQty: number;
+    minStock: number;
+    notes: string;
+  }> = {}
+) {
+  return prisma.insumo.create({
+    data: { name: `Insumo ${uniq()}`, ...overrides },
   });
 }
 

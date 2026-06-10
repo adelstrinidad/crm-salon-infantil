@@ -26,6 +26,12 @@ export enum Routes {
   PROVEEDORES = "/proveedores",
   PROVEEDORES_NUEVO = "/proveedores/nuevo",
 
+  INSUMOS = "/insumos",
+  INSUMOS_NUEVO = "/insumos/nuevo",
+
+  COMPRAS = "/compras",
+  COMPRAS_NUEVO = "/compras/nuevo",
+
   FINANZAS = "/finanzas",
   FINANZAS_CUENTAS_NUEVA = "/finanzas/cuentas/nueva",
   MOVIMIENTOS = "/finanzas/movimientos",

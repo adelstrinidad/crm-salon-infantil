@@ -13,6 +13,11 @@ import { PrestadoresListPage } from "../../pages/prestadores/prestadores-list.pa
 import { PrestadorFormPage } from "../../pages/prestadores/prestador-form.page";
 import { ProveedoresListPage } from "../../pages/proveedores/proveedores-list.page";
 import { ProveedorFormPage } from "../../pages/proveedores/proveedor-form.page";
+import { InsumosListPage } from "../../pages/insumos/insumos-list.page";
+import { InsumoFormPage } from "../../pages/insumos/insumo-form.page";
+import { InsumoDetailPage } from "../../pages/insumos/insumo-detail.page";
+import { ComprasListPage } from "../../pages/compras/compras-list.page";
+import { CompraFormPage } from "../../pages/compras/compra-form.page";
 import { EventoFormPage } from "../../pages/eventos/evento-form.page";
 import { EventoEditPage } from "../../pages/eventos/evento-edit.page";
 import { EventoDetailPage } from "../../pages/eventos/evento-detail.page";
@@ -43,6 +48,11 @@ export type PageObjectFixtures = {
   prestadorFormPage: PrestadorFormPage;
   proveedoresListPage: ProveedoresListPage;
   proveedorFormPage: ProveedorFormPage;
+  insumosListPage: InsumosListPage;
+  insumoFormPage: InsumoFormPage;
+  insumoDetailPage: InsumoDetailPage;
+  comprasListPage: ComprasListPage;
+  compraFormPage: CompraFormPage;
   eventoFormPage: EventoFormPage;
   eventoEditPage: EventoEditPage;
   eventoDetailPage: EventoDetailPage;
@@ -99,6 +109,21 @@ export const test = base.extend<PageObjectFixtures>({
   },
   proveedorFormPage: async ({ page }, use) => {
     await use(new ProveedorFormPage(page));
+  },
+  insumosListPage: async ({ page }, use) => {
+    await use(new InsumosListPage(page));
+  },
+  insumoFormPage: async ({ page }, use) => {
+    await use(new InsumoFormPage(page));
+  },
+  insumoDetailPage: async ({ page }, use) => {
+    await use(new InsumoDetailPage(page));
+  },
+  comprasListPage: async ({ page }, use) => {
+    await use(new ComprasListPage(page));
+  },
+  compraFormPage: async ({ page }, use) => {
+    await use(new CompraFormPage(page));
   },
   eventoFormPage: async ({ page }, use) => {
     await use(new EventoFormPage(page));
