@@ -19,6 +19,8 @@ export const stockAdjustSchema = stockAdjustInputSchema.transform((d, ctx) => {
     return z.NEVER;
   }
   const { kind, delta } = resolveAdjust(d.op, qty);
-  return { insumoId: d.insumoId, kind, delta, reason: d.reason || undefined };
+  // Conditional spread keeps `reason` an optional key (`reason?: string`) so
+  // callers may omit it entirely instead of passing `reason: undefined`.
+  return { insumoId: d.insumoId, kind, delta, ...(d.reason ? { reason: d.reason } : {}) };
 });
 export type StockAdjustValues = z.output<typeof stockAdjustSchema>;

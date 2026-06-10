@@ -11,6 +11,8 @@ import { formatMoney } from "@/lib/money";
 import { formatHHMM, staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
 import { SelectFilter } from "@/components/ui/select-filter";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import { HandCoins } from "lucide-react";
 
 type Props = {
   searchParams: Promise<{ from?: string; to?: string; staffId?: string; estado?: string }>;
@@ -163,7 +165,11 @@ export default async function PagosPersonalPage({ searchParams }: Props) {
 
       {/* Table */}
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin asignaciones en el período.</p>
+        <EmptyState
+          icon={HandCoins}
+          title="Sin asignaciones en el período"
+          description="Los pagos al personal de los eventos del rango seleccionado van a aparecer acá."
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">

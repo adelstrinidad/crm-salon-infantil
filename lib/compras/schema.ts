@@ -37,7 +37,9 @@ export const compraSchema = compraFormInputSchema.transform((d, ctx) => {
   return {
     proveedorId: d.proveedorId,
     date: new Date(d.date),
-    notes: d.notes || undefined,
+    // Conditional spread keeps `notes` an optional key (`notes?: string`) so
+    // callers may omit it entirely instead of passing `notes: undefined`.
+    ...(d.notes ? { notes: d.notes } : {}),
     lines,
   };
 });

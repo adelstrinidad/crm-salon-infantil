@@ -6,6 +6,7 @@ import {
   getCompra,
   getCompraPayments,
   payCompra,
+  settleCompraPayment,
   listComprasFiltered,
 } from "@/lib/compras/compraService";
 
@@ -167,5 +168,54 @@ describe("getCompraPayments / listComprasFiltered", () => {
     const { rows, total } = await listComprasFiltered({ q: "Norte", skip: 0, take: 10 });
     expect(total).toBe(1);
     expect(rows[0].proveedor.name).toBe("Distribuidora Norte");
+  });
+});
+
+// settleCompraPayment is the trust boundary the pago proveedores action calls:
+// amount and description come from the compra itself, never from the client,
+// and an already-paid compra can't be settled twice (double EGRESO).
+describe("settleCompraPayment", () => {
+  async function makePendingCompra() {
+    const prov = await makeProveedor();
+    const insumo = await makeInsumo();
+    const compra = await createCompra({
+      proveedorId: prov.id,
+      date: new Date("2026-06-10T12:00:00"),
+      lines: [{ insumoId: insumo.id, qty: 2, unitCost: 7000 }],
+    });
+    return { prov, compra };
+  }
+
+  it("settles with the compra's own total and description", async () => {
+    const { prov, compra } = await makePendingCompra();
+    const account = await makeAccount();
+
+    const result = await settleCompraPayment(compra.id, account.id);
+
+    expect(result).toEqual({ ok: true });
+    const row = await prisma.compra.findUniqueOrThrow({ where: { id: compra.id } });
+    expect(row.paid).toBe(true);
+    const movements = await prisma.movement.findMany({ where: { accountId: account.id } });
+    expect(movements).toHaveLength(1);
+    expect(movements[0].type).toBe("EGRESO");
+    expect(movements[0].amount).toBe(14000); // compra.total, not client input
+    expect(movements[0].description).toBe(`Compra ${prov.name} — 1 insumo`);
+  });
+
+  it("rejects an unknown compra", async () => {
+    const account = await makeAccount();
+    const result = await settleCompraPayment("nope", account.id);
+    expect(result).toEqual({ ok: false, error: "Compra no encontrada" });
+    expect(await prisma.movement.findMany()).toHaveLength(0);
+  });
+
+  it("rejects an already-paid compra (no second EGRESO)", async () => {
+    const { compra } = await makePendingCompra();
+    const account = await makeAccount();
+    await settleCompraPayment(compra.id, account.id);
+
+    const again = await settleCompraPayment(compra.id, account.id);
+    expect(again).toEqual({ ok: false, error: "Ya está pagada" });
+    expect(await prisma.movement.findMany()).toHaveLength(1);
   });
 });

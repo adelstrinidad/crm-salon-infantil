@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { Wallet } from "lucide-react";
 import { registrarCobroAction } from "./actions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 import { SectionTitle } from "@/components/ui/section-title";
 import { Money } from "@/components/ui/money";
 import { formatMoney, centsToPesos, parsePesosToCents } from "@/lib/money";
@@ -90,7 +94,20 @@ export function RegistrarCobroPanel({ eventId, saldo, accounts }: Props) {
               <div className="space-y-1">
                 <Label>Cuenta *</Label>
                 {accounts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Sin cuentas configuradas.</p>
+                  <EmptyState
+                    icon={Wallet}
+                    title="Sin cuentas configuradas"
+                    description="Necesitás una cuenta para registrar el cobro."
+                    action={
+                      <Link
+                        href="/finanzas/cuentas/nueva"
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                      >
+                        Crear cuenta
+                      </Link>
+                    }
+                    className="py-6"
+                  />
                 ) : (
                   <Select
                     items={Object.fromEntries(accounts.map((a) => [a.id, a.name]))}

@@ -16,12 +16,10 @@ type Account = { id: string; name: string };
 type Props = {
   kind: PaymentSourceKind;
   id: string;
-  amount: number;
-  description: string;
   accounts: Account[];
 };
 
-export function PagarButton({ kind, id, amount, description, accounts }: Props) {
+export function PagarButton({ kind, id, accounts }: Props) {
   const [open, setOpen] = useState(false);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [loading, setLoading] = useState(false);
@@ -30,7 +28,7 @@ export function PagarButton({ kind, id, amount, description, accounts }: Props) 
   async function handle() {
     setLoading(true);
     setError(null);
-    const result = await pagarPrestadorAction(kind, id, amount, accountId, description);
+    const result = await pagarPrestadorAction(kind, id, accountId);
     setLoading(false);
     if (!result.ok) setError(result.error ?? "Error");
     else setOpen(false);

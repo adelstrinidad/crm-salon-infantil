@@ -15,12 +15,10 @@ type Account = { id: string; name: string };
 
 type Props = {
   id: string;
-  amount: number;
-  description: string;
   accounts: Account[];
 };
 
-export function PagarCompraButton({ id, amount, description, accounts }: Props) {
+export function PagarCompraButton({ id, accounts }: Props) {
   const [open, setOpen] = useState(false);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [loading, setLoading] = useState(false);
@@ -29,7 +27,7 @@ export function PagarCompraButton({ id, amount, description, accounts }: Props) 
   async function handle() {
     setLoading(true);
     setError(null);
-    const result = await pagarCompraAction(id, amount, accountId, description);
+    const result = await pagarCompraAction(id, accountId);
     setLoading(false);
     if (!result.ok) setError(result.error ?? "Error");
     else setOpen(false);

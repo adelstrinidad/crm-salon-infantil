@@ -9,6 +9,8 @@ import { MOVEMENT_TYPE_LABELS, MOVEMENT_SIGN } from "@/lib/finanzas/schema";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { DeleteMovementButton } from "./DeleteMovementButton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Wallet, ArrowLeftRight } from "lucide-react";
 
 export default async function FinanzasPage() {
   const [accounts, movements] = await Promise.all([
@@ -37,7 +39,16 @@ export default async function FinanzasPage() {
         />
 
         {accounts.length === 0 ? (
-          <p className="text-muted-foreground">Sin cuentas. Creá una para empezar.</p>
+          <EmptyState
+            icon={Wallet}
+            title="Sin cuentas"
+            description="Creá una cuenta para empezar a registrar movimientos."
+            action={
+              <Link href="/finanzas/cuentas/nueva" className={cn(buttonVariants())}>
+                + Cuenta
+              </Link>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             {accounts.map((a) => (
@@ -71,7 +82,16 @@ export default async function FinanzasPage() {
       <div>
         <SectionTitle className="mb-3">Movimientos recientes</SectionTitle>
         {movements.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Sin movimientos todavía.</p>
+          <EmptyState
+            icon={ArrowLeftRight}
+            title="Sin movimientos todavía"
+            description="Los ingresos y egresos que registres van a aparecer acá."
+            action={
+              <Link href="/finanzas/movimientos/nuevo" className={cn(buttonVariants())}>
+                + Movimiento
+              </Link>
+            }
+          />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full text-sm">

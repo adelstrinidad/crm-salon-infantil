@@ -40,3 +40,24 @@ export const eventSchema = eventFormInputSchema.transform((data) => ({
 }));
 
 export type EventFormValues = z.output<typeof eventSchema>;
+
+// ── Cobro (event payment) input — validated at the Server Action boundary ─────
+// The panel sends the amount already converted to integer cents and the date as
+// the YYYY-MM-DD string from the date input.
+export const cobroInputSchema = z.object({
+  accountId: z.string().min(1, "Seleccioná una cuenta"),
+  amount: z
+    .number()
+    .int("Ingresá un importe válido")
+    .positive("Ingresá un importe válido"),
+  description: z.string().trim(),
+  date: z.string().min(1, "La fecha es requerida"),
+});
+
+export const cobroSchema = cobroInputSchema.transform((data) => ({
+  ...data,
+  date: new Date(data.date),
+}));
+
+export type CobroInput = z.infer<typeof cobroInputSchema>;
+export type CobroValues = z.output<typeof cobroSchema>;

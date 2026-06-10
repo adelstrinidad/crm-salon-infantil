@@ -134,3 +134,32 @@ export async function payCompra(compraId: string, movement: MovementFormValues) 
   ]);
   return created;
 }
+
+// Settle a purchase from the Pago proveedores page. The amount is NEVER taken
+// from the client — it is the compra's own stored total (itself derived from
+// the lines). Guards against double payment: paying an already-paid compra
+// would post a second EGRESO movement.
+export async function settleCompraPayment(
+  compraId: string,
+  accountId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const compra = await prisma.compra.findUnique({
+    where: { id: compraId },
+    include: { proveedor: true, _count: { select: { lines: true } } },
+  });
+  if (!compra) return { ok: false, error: "Compra no encontrada" };
+  if (compra.paid) return { ok: false, error: "Ya está pagada" };
+  if (compra.total <= 0) return { ok: false, error: "El monto a pagar es cero" };
+
+  const n = compra._count.lines;
+  await payCompra(compraId, {
+    accountId,
+    type: "EGRESO",
+    amount: compra.total,
+    description: `Compra ${compra.proveedor.name} — ${n} insumo${n !== 1 ? "s" : ""}`,
+    date: new Date(),
+    toAccountId: undefined,
+    eventId: undefined,
+  });
+  return { ok: true };
+}

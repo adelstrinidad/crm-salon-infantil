@@ -17,6 +17,9 @@ import {
   payService,
   getStaffPayments,
   payStaff,
+  settleProviderPayment,
+  settleServicePayment,
+  settleStaffPayment,
 } from "@/lib/pagos/pagosService";
 
 // Build the EGRESO movement payload the pago actions pass to payProvider/payService.
@@ -279,5 +282,146 @@ describe("payService — atomic settlement", () => {
     expect(row.paidAt).toBeNull();
     const movements = await prisma.movement.findMany();
     expect(movements).toHaveLength(0);
+  });
+});
+
+// The settle* functions are the trust boundary the pago actions call: they
+// compute the amount from the line itself (never from the client) and refuse
+// to settle missing or already-paid lines (a double payment would post a
+// second EGRESO movement).
+describe("settleProviderPayment", () => {
+  it("settles with the line's own snapshotted cost and description", async () => {
+    const { link, provider, event } = await eventWithProvider();
+    const account = await makeAccount();
+
+    const result = await settleProviderPayment(link.id, account.id);
+
+    expect(result).toEqual({ ok: true, eventId: event.id });
+    const row = await prisma.eventProvider.findUniqueOrThrow({ where: { id: link.id } });
+    expect(row.paid).toBe(true);
+    const movements = await prisma.movement.findMany({ where: { accountId: account.id } });
+    expect(movements).toHaveLength(1);
+    expect(movements[0].amount).toBe(50000); // EventProvider.cost, not client input
+    expect(movements[0].description).toBe(`Pago ${provider.name} — ${event.name}`);
+  });
+
+  it("rejects an unknown line", async () => {
+    const account = await makeAccount();
+    const result = await settleProviderPayment("nope", account.id);
+    expect(result).toEqual({ ok: false, error: "Asignación no encontrada" });
+    expect(await prisma.movement.findMany()).toHaveLength(0);
+  });
+
+  it("rejects an already-paid line (no second EGRESO)", async () => {
+    const { link } = await eventWithProvider();
+    const account = await makeAccount();
+    await settleProviderPayment(link.id, account.id);
+
+    const again = await settleProviderPayment(link.id, account.id);
+    expect(again).toEqual({ ok: false, error: "Ya está pagado" });
+    expect(await prisma.movement.findMany()).toHaveLength(1);
+  });
+
+  it("rejects a zero-cost line", async () => {
+    const event = await makeEvent();
+    const provider = await makeProvider({ cost: 0 });
+    const link = await prisma.eventProvider.create({
+      data: { eventId: event.id, providerId: provider.id, cost: 0 },
+    });
+    const account = await makeAccount();
+    const result = await settleProviderPayment(link.id, account.id);
+    expect(result).toEqual({ ok: false, error: "El monto a pagar es cero" });
+    expect(await prisma.movement.findMany()).toHaveLength(0);
+  });
+});
+
+describe("settleServicePayment", () => {
+  it("settles with amount = service.cost × qty computed server-side", async () => {
+    const event = await makeEvent();
+    const prestador = await makeProvider();
+    const service = await makeService({ cost: 30000, prestadorId: prestador.id });
+    const link = await prisma.eventService.create({
+      data: { eventId: event.id, serviceId: service.id, qty: 3 },
+    });
+    const account = await makeAccount();
+
+    const result = await settleServicePayment(link.id, account.id);
+
+    expect(result).toEqual({ ok: true, eventId: event.id });
+    const movements = await prisma.movement.findMany({ where: { accountId: account.id } });
+    expect(movements).toHaveLength(1);
+    expect(movements[0].amount).toBe(90000); // 30000 × 3
+    expect(movements[0].description).toBe(
+      `Pago ${prestador.name} — ${service.name} — ${event.name}`,
+    );
+  });
+
+  it("rejects unknown, already-paid, and prestador-less lines", async () => {
+    const account = await makeAccount();
+    expect(await settleServicePayment("nope", account.id)).toEqual({
+      ok: false,
+      error: "Asignación no encontrada",
+    });
+
+    const { link } = await eventWithPrestadorService();
+    await settleServicePayment(link.id, account.id);
+    expect(await settleServicePayment(link.id, account.id)).toEqual({
+      ok: false,
+      error: "Ya está pagado",
+    });
+
+    const event = await makeEvent();
+    const noPrestador = await makeService({ cost: 10000 }); // prestadorId null
+    const orphan = await prisma.eventService.create({
+      data: { eventId: event.id, serviceId: noPrestador.id, qty: 1 },
+    });
+    expect(await settleServicePayment(orphan.id, account.id)).toEqual({
+      ok: false,
+      error: "El servicio no tiene prestador asignado",
+    });
+
+    expect(await prisma.movement.findMany()).toHaveLength(1); // only the first settle
+  });
+});
+
+describe("settleStaffPayment", () => {
+  it("settles with amount computed from real hours (hourlyRate × actualMinutes)", async () => {
+    const { link, staff, event } = await eventWithStaff(); // $2.500/h × 5h
+    const account = await makeAccount();
+
+    const result = await settleStaffPayment(link.id, account.id);
+
+    expect(result).toEqual({ ok: true, eventId: event.id });
+    const movements = await prisma.movement.findMany({ where: { accountId: account.id } });
+    expect(movements).toHaveLength(1);
+    expect(movements[0].amount).toBe(1250000);
+    expect(movements[0].description).toBe(`Pago personal — ${staff.name} (${event.name})`);
+  });
+
+  it("refuses to pay before the real hours are registered", async () => {
+    const { link } = await eventWithStaff(undefined, { actualMinutes: null });
+    const account = await makeAccount();
+    const result = await settleStaffPayment(link.id, account.id);
+    expect(result).toEqual({
+      ok: false,
+      error: "Registrá las horas reales antes de pagar",
+    });
+    expect(await prisma.movement.findMany()).toHaveLength(0);
+  });
+
+  it("rejects unknown and already-paid lines", async () => {
+    const account = await makeAccount();
+    expect(await settleStaffPayment("nope", account.id)).toEqual({
+      ok: false,
+      error: "Asignación no encontrada",
+    });
+
+    const { link } = await eventWithStaff();
+    await settleStaffPayment(link.id, account.id);
+    expect(await settleStaffPayment(link.id, account.id)).toEqual({
+      ok: false,
+      error: "Ya está pagado",
+    });
+    expect(await prisma.movement.findMany()).toHaveLength(1);
   });
 });

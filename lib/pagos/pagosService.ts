@@ -1,5 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import type { MovementFormValues } from "@/lib/finanzas/schema";
+import { staffLineCost } from "@/lib/staff/hours";
+
+// Settlement result for the pago actions: `eventId` (when the line belongs to
+// an event) lets the action revalidate the event's pages.
+export type SettleResult =
+  | { ok: true; eventId?: string }
+  | { ok: false; error: string };
 
 export async function getProviderPayments(opts: {
   from?: Date;
@@ -50,6 +57,65 @@ export async function payProvider(
   return created;
 }
 
+// Settle a direct event-provider line. The amount is NEVER taken from the
+// client: it is the line's own snapshotted cost (EventProvider.cost). Guards
+// against double payment — paying an already-paid line would post a second
+// EGRESO movement.
+export async function settleProviderPayment(
+  eventProviderId: string,
+  accountId: string
+): Promise<SettleResult> {
+  const line = await prisma.eventProvider.findUnique({
+    where: { id: eventProviderId },
+    include: { provider: true, event: true },
+  });
+  if (!line) return { ok: false, error: "Asignación no encontrada" };
+  if (line.paid) return { ok: false, error: "Ya está pagado" };
+  if (line.cost <= 0) return { ok: false, error: "El monto a pagar es cero" };
+
+  await payProvider(eventProviderId, {
+    accountId,
+    type: "EGRESO",
+    amount: line.cost,
+    description: `Pago ${line.provider.name} — ${line.event.name}`,
+    date: new Date(),
+    toAccountId: undefined,
+    eventId: undefined,
+  });
+  return { ok: true, eventId: line.eventId };
+}
+
+// Settle a service-backed prestador line. Amount is computed server-side as
+// service.cost × qty (never trusted from the client) and the line must be
+// backed by a prestador.
+export async function settleServicePayment(
+  eventServiceId: string,
+  accountId: string
+): Promise<SettleResult> {
+  const line = await prisma.eventService.findUnique({
+    where: { id: eventServiceId },
+    include: { service: { include: { prestador: true } }, event: true },
+  });
+  if (!line) return { ok: false, error: "Asignación no encontrada" };
+  if (line.paid) return { ok: false, error: "Ya está pagado" };
+  if (!line.service.prestador) {
+    return { ok: false, error: "El servicio no tiene prestador asignado" };
+  }
+  const amount = line.service.cost * line.qty;
+  if (amount <= 0) return { ok: false, error: "El monto a pagar es cero" };
+
+  await payService(eventServiceId, {
+    accountId,
+    type: "EGRESO",
+    amount,
+    description: `Pago ${line.service.prestador.name} — ${line.service.name} — ${line.event.name}`,
+    date: new Date(),
+    toAccountId: undefined,
+    eventId: undefined,
+  });
+  return { ok: true, eventId: line.eventId };
+}
+
 // Internal hourly staff payments. One row per EventStaff assignment, with its
 // event + staff, so the Pago personal page can compute the amount from the real
 // hours (staff.hourlyRate × actualMinutes).
@@ -90,6 +156,39 @@ export async function payStaff(eventStaffId: string, movement: MovementFormValue
     prisma.movement.create({ data: movement }),
   ]);
   return created;
+}
+
+// Settle an internal staff assignment. The amount is computed server-side from
+// the REAL hours logged (staff.hourlyRate × actualMinutes — never trusts the
+// client): you can't pay until the hours are registered, which also clears the
+// "falta registro" state for that line.
+export async function settleStaffPayment(
+  eventStaffId: string,
+  accountId: string
+): Promise<SettleResult> {
+  const line = await prisma.eventStaff.findUnique({
+    where: { id: eventStaffId },
+    include: { staff: true, event: true },
+  });
+  if (!line) return { ok: false, error: "Asignación no encontrada" };
+  if (line.paid) return { ok: false, error: "Ya está pagado" };
+  if (line.actualMinutes == null) {
+    return { ok: false, error: "Registrá las horas reales antes de pagar" };
+  }
+
+  const amount = staffLineCost(line.staff.hourlyRate, line.actualMinutes);
+  if (amount <= 0) return { ok: false, error: "El monto a pagar es cero" };
+
+  await payStaff(eventStaffId, {
+    accountId,
+    type: "EGRESO",
+    amount,
+    description: `Pago personal — ${line.staff.name} (${line.event.name})`,
+    date: new Date(),
+    toAccountId: undefined,
+    eventId: undefined,
+  });
+  return { ok: true, eventId: line.eventId };
 }
 
 // Service-backed prestador payments: a service used on an event is owed to the
