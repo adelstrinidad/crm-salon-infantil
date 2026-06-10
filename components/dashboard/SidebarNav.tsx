@@ -11,6 +11,7 @@ import {
   UserCog,
   UsersRound,
   Truck,
+  Package,
   Wallet,
   ArrowLeftRight,
   HandCoins,
@@ -42,6 +43,7 @@ const groups: NavGroup[] = [
       { href: "/prestadores", label: "Prestadores", icon: UserCog },
       { href: "/personal", label: "Personal", icon: UsersRound },
       { href: "/proveedores", label: "Proveedores", icon: Truck },
+      { href: "/insumos", label: "Insumos", icon: Package },
     ],
   },
   {

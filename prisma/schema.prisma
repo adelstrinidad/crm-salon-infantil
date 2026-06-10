@@ -80,6 +80,22 @@ model Proveedor {
   updatedAt   DateTime  @updatedAt
 }
 
+// ─── Insumo (supply item — stock/inventory catalog) ──────────────────────────
+// A consumable the venue buys from a Proveedor (gaseosas, gas, platos, bolsas…).
+// Phase 1: master data + a plain on-hand stock count. Purchases (which raise
+// stock) and consumption arrive in later phases. Quantities are whole units;
+// `unit` records what one unit means (unidad/litro/kg/caja).
+model Insumo {
+  id        String   @id @default(cuid())
+  name      String
+  unit      String   @default("unidad")
+  stockQty  Int      @default(0) // current on-hand count, whole units
+  minStock  Int      @default(0) // low-stock alert threshold
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // ─── Service catalog ─────────────────────────────────────────────────────────
 model Service {
   id           String         @id @default(cuid())
