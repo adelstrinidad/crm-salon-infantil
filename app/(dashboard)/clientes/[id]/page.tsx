@@ -7,6 +7,8 @@ import { SectionTitle } from "@/components/ui/section-title";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CalendarDays } from "lucide-react";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -40,7 +42,17 @@ export default async function ClienteDetailPage({ params }: Props) {
       <div>
         <SectionTitle className="mb-3">Eventos ({client.events.length})</SectionTitle>
         {client.events.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin eventos vinculados.</p>
+          <EmptyState
+            icon={CalendarDays}
+            title="Sin eventos vinculados"
+            description="Los eventos de este cliente van a aparecer acá."
+            action={
+              <Link href="/eventos/nuevo" className={cn(buttonVariants())}>
+                + Nuevo evento
+              </Link>
+            }
+            className="py-8"
+          />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full text-sm">

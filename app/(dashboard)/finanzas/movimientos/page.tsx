@@ -12,6 +12,8 @@ import { SelectFilter } from "@/components/ui/select-filter";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DeleteMovementButton } from "../DeleteMovementButton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ArrowLeftRight } from "lucide-react";
 
 type Props = { searchParams: Promise<{ from?: string; to?: string; accountId?: string; type?: string; page?: string }> };
 
@@ -121,7 +123,16 @@ export default async function MovimientosPage({ searchParams }: Props) {
 
       {/* Table */}
       {movements.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin movimientos en el período.</p>
+        <EmptyState
+          icon={ArrowLeftRight}
+          title="Sin movimientos en el período"
+          description="Probá con otro rango de fechas o registrá un movimiento nuevo."
+          action={
+            <Link href="/finanzas/movimientos/nuevo" className={cn(buttonVariants())}>
+              + Movimiento
+            </Link>
+          }
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">

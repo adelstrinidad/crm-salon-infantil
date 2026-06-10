@@ -17,6 +17,8 @@ import { SelectFilter } from "@/components/ui/select-filter";
 import { Input } from "@/components/ui/input";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
+import { BarChart3, CalendarDays, ArrowLeftRight } from "lucide-react";
 
 type Props = { searchParams: Promise<{ from?: string; to?: string; state?: string }> };
 
@@ -88,7 +90,12 @@ export default async function ReportesPage({ searchParams }: Props) {
         <SectionTitle>Balance por tipo de evento</SectionTitle>
 
         {grouped.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin eventos en el período.</p>
+          <EmptyState
+            icon={BarChart3}
+            title="Sin eventos en el período"
+            description="Ajustá el rango de fechas o el estado para ver el balance por tipo."
+            className="py-8"
+          />
         ) : (
           <>
             <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
@@ -171,7 +178,12 @@ export default async function ReportesPage({ searchParams }: Props) {
         <SectionTitle>Detalle por evento</SectionTitle>
 
         {eventRows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin eventos en el período.</p>
+          <EmptyState
+            icon={CalendarDays}
+            title="Sin eventos en el período"
+            description="Los eventos del rango seleccionado van a aparecer acá con su detalle financiero."
+            className="py-8"
+          />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full text-sm">
@@ -225,7 +237,12 @@ export default async function ReportesPage({ searchParams }: Props) {
         <SectionTitle>Movimientos sin evento</SectionTitle>
 
         {movWithout.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin movimientos independientes en el período.</p>
+          <EmptyState
+            icon={ArrowLeftRight}
+            title="Sin movimientos independientes"
+            description="No hay movimientos sin evento asociado en el período seleccionado."
+            className="py-8"
+          />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full text-sm">

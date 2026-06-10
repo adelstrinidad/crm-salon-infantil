@@ -14,6 +14,8 @@ import type { PaymentSourceKind } from "./actions";
 import { formatMoney } from "@/lib/money";
 import { SelectFilter } from "@/components/ui/select-filter";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import { HandCoins } from "lucide-react";
 
 type Props = {
   searchParams: Promise<{ from?: string; to?: string; prestadorId?: string; estado?: string }>;
@@ -35,7 +37,6 @@ type PaymentRow = {
   paidAt: Date | null;
   removed: boolean;
   removedAt: Date | null;
-  description: string;
 };
 
 function localDate(d: Date) {
@@ -84,7 +85,6 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
       paidAt: r.paidAt,
       removed: false,
       removedAt: null,
-      description: `Pago ${r.provider.name} — ${r.event.name}`,
     })),
     ...serviceRows.map((r): PaymentRow => ({
       key: `svc-${r.id}`,
@@ -100,7 +100,6 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
       paidAt: r.paidAt,
       removed: false,
       removedAt: null,
-      description: `Pago ${r.service.prestador!.name} — ${r.service.name} — ${r.event.name}`,
     })),
   ].sort((a, b) => (a.eventStartAt!.getTime() - b.eventStartAt!.getTime()));
 
@@ -118,7 +117,6 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
     paidAt: r.paidAt,
     removed: true,
     removedAt: r.removedAt,
-    description: "",
   }));
 
   const rows = [...activeRows, ...removed];
@@ -188,7 +186,11 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
 
       {/* Table */}
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin asignaciones en el período.</p>
+        <EmptyState
+          icon={HandCoins}
+          title="Sin asignaciones en el período"
+          description="Los pagos a prestadores de los eventos del rango seleccionado van a aparecer acá."
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full text-sm">
@@ -239,13 +241,7 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
                   </td>
                   <td className="px-4 py-2">
                     {!r.removed && !r.paid && accounts.length > 0 && (
-                      <PagarButton
-                        kind={r.kind}
-                        id={r.id}
-                        amount={r.amount}
-                        description={r.description}
-                        accounts={accounts}
-                      />
+                      <PagarButton kind={r.kind} id={r.id} accounts={accounts} />
                     )}
                     {!r.removed && !r.paid && accounts.length === 0 && (
                       <span className="text-xs text-muted-foreground">Sin cuentas</span>

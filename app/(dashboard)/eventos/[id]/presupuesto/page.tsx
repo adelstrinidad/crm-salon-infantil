@@ -244,7 +244,7 @@ export default async function PresupuestoPage({ params }: Props) {
         </ul>
 
         {/* Signature area */}
-        <div className="grid grid-cols-2 gap-12 mt-12 text-sm text-center">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-12 mt-12 text-sm text-center">
           <div>
             <div className="border-t border-foreground/40 pt-2">Firma del cliente</div>
           </div>

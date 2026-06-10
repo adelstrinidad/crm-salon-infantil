@@ -157,12 +157,7 @@ export default async function PagosProveedoresPage({ searchParams }: Props) {
                     </td>
                     <td className="px-4 py-2">
                       {!c.paid && accounts.length > 0 && (
-                        <PagarCompraButton
-                          id={c.id}
-                          amount={c.total}
-                          description={`Compra ${c.proveedor.name} — ${c._count.lines} insumo${c._count.lines !== 1 ? "s" : ""}`}
-                          accounts={accounts}
-                        />
+                        <PagarCompraButton id={c.id} accounts={accounts} />
                       )}
                       {!c.paid && accounts.length === 0 && (
                         <span className="text-xs text-muted-foreground">Sin cuentas</span>

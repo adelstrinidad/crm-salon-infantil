@@ -1,9 +1,10 @@
 // Domain layer: all event DB operations live here.
 // Server Actions and Route Handlers call these functions — they never import Prisma directly.
 import { prisma } from "@/lib/prisma";
-import type { EventFormValues, EventState } from "./schema";
+import type { CobroValues, EventFormValues, EventState } from "./schema";
 import { parseEventSort } from "./listFilters";
 import { computeEventFinancials } from "./financials";
+import { resolvePaidState } from "./paymentState";
 import type { Prisma } from "@/app/generated/prisma/client";
 
 export async function listEvents() {
@@ -118,6 +119,42 @@ export async function recomputeEventTotalPrice(eventId: string): Promise<number>
 
 export async function setEventState(id: string, state: EventState) {
   return prisma.event.update({ where: { id }, data: { state } });
+}
+
+// Record an event payment (cobro): create the INGRESO movement and, when the
+// collected total crosses a threshold, advance the event state — both in one
+// transaction so a movement is never recorded without its state change (or
+// vice versa). The new state is decided from the already-collected INGRESO
+// total plus this payment (resolvePaidState — pure, never downgrades).
+export async function registrarCobro(eventId: string, data: CobroValues) {
+  const event = await prisma.event.findUniqueOrThrow({ where: { id: eventId } });
+
+  // Default a description so the movement isn't blank on the Movimientos list.
+  const description = data.description || `Cobro — ${event.name}`;
+
+  const previo = await prisma.movement.aggregate({
+    where: { eventId, type: "INGRESO" },
+    _sum: { amount: true },
+  });
+  const cobrado = (previo._sum.amount ?? 0) + data.amount;
+  const newState = resolvePaidState(event.state, cobrado, event.totalPrice);
+
+  const [movement] = await prisma.$transaction([
+    prisma.movement.create({
+      data: {
+        accountId: data.accountId,
+        type: "INGRESO",
+        amount: data.amount,
+        description,
+        date: data.date,
+        eventId,
+      },
+    }),
+    ...(newState
+      ? [prisma.event.update({ where: { id: eventId }, data: { state: newState } })]
+      : []),
+  ]);
+  return { movement, newState };
 }
 
 // Focused reschedule used by calendar drag-and-drop: only moves the time range,

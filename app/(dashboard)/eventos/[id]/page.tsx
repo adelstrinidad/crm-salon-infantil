@@ -12,6 +12,8 @@ import { formatMoney } from "@/lib/money";
 import { formatHHMM, staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
 import { cn } from "@/lib/utils";
 import { RegistrarCobroPanel } from "./RegistrarCobroPanel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Sparkles, Users, UserRound, ArrowLeftRight } from "lucide-react";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -192,7 +194,12 @@ export default async function EventoDetailPage({ params }: Props) {
       <Card className="p-5">
         <SectionTitle className="text-base mb-3">Servicios</SectionTitle>
         {event.services.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin servicios asignados.</p>
+          <EmptyState
+            icon={Sparkles}
+            title="Sin servicios asignados"
+            description="Agregá servicios desde la edición del evento para armar el presupuesto."
+            className="py-8"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -254,7 +261,12 @@ export default async function EventoDetailPage({ params }: Props) {
       <Card className="p-5">
         <SectionTitle className="text-base mb-3">Prestadores</SectionTitle>
         {event.providers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin prestadores asignados.</p>
+          <EmptyState
+            icon={Users}
+            title="Sin prestadores asignados"
+            description="Asigná prestadores desde la edición del evento."
+            className="py-8"
+          />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
@@ -300,7 +312,12 @@ export default async function EventoDetailPage({ params }: Props) {
           )}
         </div>
         {event.staff.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin personal asignado.</p>
+          <EmptyState
+            icon={UserRound}
+            title="Sin personal asignado"
+            description="Asigná empleados desde la edición del evento."
+            className="py-8"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -375,7 +392,12 @@ export default async function EventoDetailPage({ params }: Props) {
         </div>
 
         {movements.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin movimientos registrados para este evento.</p>
+          <EmptyState
+            icon={ArrowLeftRight}
+            title="Sin movimientos registrados"
+            description="Registrá un cobro para empezar el historial de pagos del evento."
+            className="py-8"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
