@@ -16,7 +16,7 @@ export class PagoProveedoresPage {
     return this.page.getByText("Pendiente").first();
   }
   get pagadoBadge(): Locator {
-    return this.page.getByText(/Pagado/).first();
+    return this.page.getByText(/Pagad[ao]/).first();
   }
 
   /**
