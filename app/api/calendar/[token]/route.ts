@@ -3,14 +3,25 @@
 // so phone/desktop calendar apps can poll it. No session = no PII beyond event
 // name/type/state. Returns 404 (not 401) on bad token to avoid confirming the URL.
 import type { NextRequest } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { listEvents } from "@/lib/events/eventService";
 import { buildIcs } from "@/lib/calendar/ics";
+
+// Constant-time compare so the token can't be recovered byte-by-byte via
+// response-timing analysis. Bails on length mismatch (timingSafeEqual throws
+// on unequal lengths) without leaking which length was wrong.
+function tokenMatches(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/calendar/[token]">) {
   const { token } = await ctx.params;
   const expected = process.env.CALENDAR_FEED_TOKEN;
 
-  if (!expected || token !== expected) {
+  if (!expected || !tokenMatches(token, expected)) {
     return new Response("Not found", { status: 404 });
   }
 

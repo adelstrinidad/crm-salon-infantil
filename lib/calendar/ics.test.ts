@@ -17,6 +17,46 @@ describe("escapeIcsText", () => {
   it("escapes commas, semicolons, backslashes, newlines", () => {
     expect(escapeIcsText("a, b; c\\d\ne")).toBe("a\\, b\\; c\\\\d\\ne");
   });
+
+  // Security: a lone CR (or a CRLF) in user input must not survive into the
+  // output, or it could inject a new ICS content line (a forged property).
+  it("neutralises lone carriage returns and CRLF", () => {
+    expect(escapeIcsText("a\rb")).toBe("a\\nb");
+    expect(escapeIcsText("a\r\nb")).toBe("a\\nb");
+    const bad = escapeIcsText("SUMMARY:x\r\nDESCRIPTION:evil");
+    expect(bad).not.toContain("\r");
+    expect(bad).not.toContain("\n");
+  });
+
+  // Colons are legal literals in a TEXT value and must be left intact.
+  it("does not escape colons", () => {
+    expect(escapeIcsText("Fiesta: Mateo")).toBe("Fiesta: Mateo");
+  });
+});
+
+// An attacker-controlled event name with a line break must not break out of
+// the SUMMARY line into a forged property; the feed stays well-formed.
+describe("buildIcs — injection resistance", () => {
+  it("keeps a malicious event name on a single SUMMARY line", () => {
+    const ics = buildIcs(
+      [
+        {
+          id: "x",
+          name: "Hack\r\nATTENDEE:mailto:evil@x.com",
+          startAt: new Date(Date.UTC(2026, 0, 1, 0, 0, 0)),
+          endAt: new Date(Date.UTC(2026, 0, 1, 1, 0, 0)),
+          state: "PAGADO",
+          eventType: "Cumpleaños",
+        },
+      ],
+      STAMP,
+    );
+    // No content line is a forged ATTENDEE property — the break was escaped, so
+    // the malicious text stays inside the SUMMARY value on one line.
+    const lines = ics.split("\r\n");
+    expect(lines.some((l) => l.startsWith("ATTENDEE"))).toBe(false);
+    expect(lines).toContain("SUMMARY:Hack\\nATTENDEE:mailto:evil@x.com");
+  });
 });
 
 describe("buildIcs", () => {

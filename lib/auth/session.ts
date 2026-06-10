@@ -1,25 +1,30 @@
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  COOKIE_NAME,
+  ABSOLUTE_MAX_AGE_SECONDS,
+  signToken,
+  verifyToken,
+  freshAbsoluteDeadline,
+} from "./jwt";
 
-const COOKIE_NAME = "session";
-const secret = new TextEncoder().encode(process.env.AUTH_SECRET!);
-
-export async function createSession() {
-  const token = await new SignJWT({ authenticated: true })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("7d")
-    .sign(secret);
-
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
+function cookieOptions(maxAge: number) {
+  return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
+    maxAge,
+  };
+}
+
+export async function createSession() {
+  const token = await signToken(freshAbsoluteDeadline());
+  const cookieStore = await cookies();
+  // The cookie lives as long as the absolute cap; the JWT `exp` (idle window)
+  // is what actually expires the session, so the browser can still send a
+  // now-expired cookie that we reject server-side.
+  cookieStore.set(COOKIE_NAME, token, cookieOptions(ABSOLUTE_MAX_AGE_SECONDS));
 }
 
 export async function deleteSession() {
@@ -31,16 +36,12 @@ export async function getSession(): Promise<{ authenticated: boolean } | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
-  try {
-    const { payload } = await jwtVerify(token, secret);
-    return { authenticated: payload.authenticated as boolean };
-  } catch {
-    return null;
-  }
+  const claims = await verifyToken(token);
+  return claims ? { authenticated: true } : null;
 }
 
-// Guard for Server Actions: middleware gates page navigation, but a Server
-// Action POST should also verify the session (defense in depth). Redirects to
+// Guard for Server Actions: the proxy gates page navigation, but a Server
+// Action POST must also verify the session (defense in depth). Redirects to
 // /login when unauthenticated.
 export async function requireSession(): Promise<{ authenticated: boolean }> {
   const session = await getSession();

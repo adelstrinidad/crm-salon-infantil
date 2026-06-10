@@ -29,13 +29,18 @@ export function formatIcsDate(d: Date): string {
   );
 }
 
-// Escape per RFC 5545 §3.3.11: backslash, semicolon, comma, newline.
+// Escape per RFC 5545 §3.3.11: backslash, semicolon, comma, and line breaks.
+// Every CR and LF is neutralised independently (not just the CRLF/LF pair) so
+// a lone carriage return in user input can't inject a new content line — the
+// only way to forge an extra ICS property is an unescaped line break.
+// (Colons are intentionally NOT escaped: they are legal literals inside a TEXT
+// value and escaping them would corrupt the feed.)
 export function escapeIcsText(s: string): string {
   return s
     .replace(/\\/g, "\\\\")
     .replace(/;/g, "\\;")
     .replace(/,/g, "\\,")
-    .replace(/\r?\n/g, "\\n");
+    .replace(/\r\n|\r|\n/g, "\\n");
 }
 
 export function buildIcs(events: IcsEvent[], stamp: Date): string {
