@@ -29,9 +29,11 @@ import {
   Ban,
   TriangleAlert,
   PartyPopper,
+  Play,
   type LucideIcon,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { statusBadgeLabel } from "@/components/ui/status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -54,6 +56,7 @@ const STATE_COLORS: Record<string, string> = {
   RESERVADO: "#dbeafe",
   SENADO: "#fef3c7",
   PAGADO: "#d1fae5",
+  EN_CURSO: "#cffafe",
   CERRADO: "#e7e5e4",
   SUSPENDIDO: "#ffe4e6",
 };
@@ -63,6 +66,7 @@ const STATE_TEXT: Record<string, string> = {
   RESERVADO: "#1e3a8a",
   SENADO: "#78350f",
   PAGADO: "#064e3b",
+  EN_CURSO: "#164e63",
   CERRADO: "#1c1917",
   SUSPENDIDO: "#881337",
 };
@@ -73,6 +77,7 @@ const STATE_BORDER: Record<string, string> = {
   RESERVADO: "#93c5fd",
   SENADO: "#fcd34d",
   PAGADO: "#6ee7b7",
+  EN_CURSO: "#67e8f9",
   CERRADO: "#d6d3d1",
   SUSPENDIDO: "#fda4af",
 };
@@ -83,15 +88,16 @@ const STATE_ICON: Record<string, LucideIcon> = {
   RESERVADO: CalendarCheck2, // booked
   SENADO: Coins, // deposit paid
   PAGADO: CheckCircle2, // paid in full
+  EN_CURSO: Play, // running right now
   CERRADO: Lock, // closed/settled
   SUSPENDIDO: Ban, // cancelled/on hold
 };
 
-const STATES = ["PRESUPUESTADO", "RESERVADO", "SENADO", "PAGADO", "CERRADO", "SUSPENDIDO"] as const;
+const STATES = ["PRESUPUESTADO", "RESERVADO", "SENADO", "PAGADO", "EN_CURSO", "CERRADO", "SUSPENDIDO"] as const;
 
 // Only confirmed bookings occupy the venue, so only these flag a visual
 // double-booking — mirrors the server-side guard (BLOCKING_STATES in eventService).
-const CONFLICT_STATES = new Set(["RESERVADO", "SENADO", "PAGADO", "CERRADO"]);
+const CONFLICT_STATES = new Set(["RESERVADO", "SENADO", "PAGADO", "EN_CURSO", "CERRADO"]);
 
 const HOLIDAY_COLOR = { bg: "#ffedd5", text: "#9a3412", border: "#fb923c" };
 
@@ -173,6 +179,14 @@ export function CalendarClient({ events, holidays = [], defaultDateMs }: Props) 
     setPrevEvents(events);
     setOverrides({});
   }
+  // Drag onto an occupied slot: park the move here and ask through the themed
+  // dialog (never window.confirm) before committing it.
+  const [pendingMove, setPendingMove] = useState<{
+    event: CalendarEvent;
+    startMs: number;
+    endMs: number;
+  } | null>(null);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
 
   // On small screens the month grid is cramped — default to the agenda/list view.
   // Viewport is unknown during SSR, so this must run post-mount; the one-shot
@@ -325,7 +339,28 @@ export function CalendarClient({ events, holidays = [], defaultDateMs }: Props) 
     [router],
   );
 
-  // Drag-to-reschedule (and resize). Warns before creating a double-booking.
+  // Commit a reschedule: optimistic position, server action, rollback + themed
+  // error notice on failure.
+  const applyReschedule = useCallback(
+    async (eventId: string, startMs: number, endMs: number) => {
+      setOverrides((prev) => ({ ...prev, [eventId]: { startMs, endMs } }));
+      const res = await rescheduleEventAction(eventId, startMs, endMs);
+      if (!res.ok) {
+        setOverrides((prev) => {
+          const next = { ...prev };
+          delete next[eventId];
+          return next;
+        });
+        setRescheduleError(res.error ?? "No se pudo reprogramar el evento.");
+        return;
+      }
+      router.refresh();
+    },
+    [router],
+  );
+
+  // Drag-to-reschedule (and resize). Asks (themed dialog) before creating a
+  // double-booking; dropping the dialog leaves the event where it was.
   const handleReschedule = useCallback<NonNullable<withDragAndDropProps<CalendarEvent>["onEventDrop"]>>(
     async ({ event, start, end }) => {
       const s = start instanceof Date ? start : new Date(start);
@@ -333,26 +368,13 @@ export function CalendarClient({ events, holidays = [], defaultDateMs }: Props) 
       const others = events
         .filter((x) => x.id !== event.id && activeStates.has(x.state))
         .map((x) => ({ id: x.id, startMs: x.startMs, endMs: x.endMs }));
-      if (
-        overlapsAny({ startMs: s.getTime(), endMs: en.getTime() }, others) &&
-        !window.confirm("Este horario se superpone con otro evento. ¿Mover de todas formas?")
-      ) {
+      if (overlapsAny({ startMs: s.getTime(), endMs: en.getTime() }, others)) {
+        setPendingMove({ event, startMs: s.getTime(), endMs: en.getTime() });
         return;
       }
-      setOverrides((prev) => ({ ...prev, [event.id]: { startMs: s.getTime(), endMs: en.getTime() } }));
-      const res = await rescheduleEventAction(event.id, s.getTime(), en.getTime());
-      if (!res.ok) {
-        setOverrides((prev) => {
-          const next = { ...prev };
-          delete next[event.id];
-          return next;
-        });
-        window.alert(res.error ?? "No se pudo reprogramar el evento.");
-        return;
-      }
-      router.refresh();
+      await applyReschedule(event.id, s.getTime(), en.getTime());
     },
-    [events, activeStates, router],
+    [events, activeStates, applyReschedule],
   );
 
   // Custom chip: a per-state icon (paid → check, deposit → coins, etc.) plus a
@@ -552,6 +574,21 @@ export function CalendarClient({ events, holidays = [], defaultDateMs }: Props) 
         )}
       </div>
 
+      {/* Reschedule failure notice (replaces window.alert) */}
+      {rescheduleError && (
+        <div className="mb-2 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <span>{rescheduleError}</span>
+          <button
+            type="button"
+            onClick={() => setRescheduleError(null)}
+            aria-label="Cerrar aviso"
+            className="font-medium hover:underline"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Calendar */}
       <div className="min-h-0 flex-1" style={{ height: "calc(100vh - 260px)" }}>
         <DnDCalendar
@@ -579,6 +616,21 @@ export function CalendarClient({ events, holidays = [], defaultDateMs }: Props) 
           style={{ height: "100%" }}
         />
       </div>
+
+      {/* Double-booking confirmation for drag-to-reschedule */}
+      <ConfirmDialog
+        open={pendingMove !== null}
+        title="Posible superposición"
+        description="Este horario se superpone con otro evento. ¿Mover de todas formas?"
+        confirmLabel="Mover de todas formas"
+        onConfirm={() => {
+          if (pendingMove) {
+            void applyReschedule(pendingMove.event.id, pendingMove.startMs, pendingMove.endMs);
+          }
+          setPendingMove(null);
+        }}
+        onCancel={() => setPendingMove(null)}
+      />
     </div>
   );
 }

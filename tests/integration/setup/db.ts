@@ -9,6 +9,7 @@ export { prisma };
 export async function resetDb() {
   await prisma.removedEventLine.deleteMany();
   await prisma.movement.deleteMany();
+  await prisma.eventConsumo.deleteMany();
   await prisma.eventService.deleteMany();
   await prisma.eventBonificado.deleteMany();
   await prisma.eventProvider.deleteMany();
@@ -81,6 +82,7 @@ export function makeInsumo(
     unit: string;
     stockQty: number;
     minStock: number;
+    eventPrice: number;
     notes: string;
   }> = {}
 ) {
@@ -129,9 +131,13 @@ type EventOverrides = Partial<{
     | "RESERVADO"
     | "SENADO"
     | "PAGADO"
+    | "EN_CURSO"
     | "CERRADO"
     | "SUSPENDIDO";
   totalPrice: number;
+  consumosStartedAt: Date;
+  consumosClosedAt: Date;
+  consumosPaidAt: Date;
 }>;
 
 export function makeEvent(overrides: EventOverrides = {}) {
@@ -159,6 +165,7 @@ export function makeMovement(
       | "ARQUEO"
       | "INVERSION"
       | "RETIRO";
+    kind: string;
     amount: number;
     date: Date;
     toAccountId: string;

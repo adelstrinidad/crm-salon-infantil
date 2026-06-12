@@ -12,8 +12,19 @@ import { formatMoney } from "@/lib/money";
 import { formatHHMM, staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
 import { cn } from "@/lib/utils";
 import { RegistrarCobroPanel } from "./RegistrarCobroPanel";
+import { RegistrarPagoConsumosPanel } from "./RegistrarPagoConsumosPanel";
+import { CobrarInvitadoPanel } from "./CobrarInvitadoPanel";
+import { IniciarEventoButton, CerrarConsumosButton } from "./ConsumosLifecycleButtons";
+import { getEventConsumos, STARTABLE_STATES } from "@/lib/consumos/consumoService";
+import {
+  computeConsumosSummary,
+  consumoLineTotal,
+  splitConsumosByPayer,
+  pendingClientTotal,
+} from "@/lib/consumos/calc";
+import { tableLabel, PAYER_TYPE_LABELS, type PayerType } from "@/lib/consumos/schema";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Sparkles, Users, UserRound, ArrowLeftRight } from "lucide-react";
+import { Sparkles, Users, UserRound, ArrowLeftRight, UtensilsCrossed } from "lucide-react";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -26,12 +37,27 @@ function fmtDate(d: Date) {
 export default async function EventoDetailPage({ params }: Props) {
   const { id } = await params;
 
-  const [event, movements, accounts] = await Promise.all([
+  const [event, movements, accounts, consumos] = await Promise.all([
     getEventWithAll(id).catch(() => null),
     getMovementsByEvent(id),
     listAccounts(),
+    getEventConsumos(id),
   ]);
   if (!event) return notFound();
+
+  // Consumption session status drives which actions the Consumos card offers.
+  const consumosOpen = event.consumosStartedAt != null && event.consumosClosedAt == null;
+  const consumosSummary = computeConsumosSummary(consumos);
+  const canStart = event.consumosStartedAt == null && STARTABLE_STATES.includes(event.state);
+  // Client bill vs self-paying guests: settled separately.
+  const { cliente: clientLines, invitados } = splitConsumosByPayer(consumos);
+  const clientPending = pendingClientTotal(consumos);
+  const clientBillPaid =
+    event.consumosClosedAt != null && clientLines.length > 0 && clientPending === 0;
+  const clientPaidAt = clientLines.reduce<Date | null>(
+    (latest, l) => (l.paidAt && (!latest || l.paidAt > latest) ? l.paidAt : latest),
+    null,
+  );
 
   const { serviceCost, providerCost, staffCost, totalBonificado, totalCost, profit } =
     computeEventFinancials(event);
@@ -39,8 +65,10 @@ export default async function EventoDetailPage({ params }: Props) {
   // "Falta registro de empleados": any assigned staff without real hours logged.
   const staffPending = event.staff.some((l) => l.actualMinutes == null);
 
+  // Consumption-bill payments (kind "consumo") are income but never count
+  // against the event price — totalPrice covers services only.
   const cobrado = movements
-    .filter((m) => m.type === "INGRESO")
+    .filter((m) => m.type === "INGRESO" && m.kind !== "consumo")
     .reduce((s, m) => s + m.amount, 0);
   const saldo = event.totalPrice - cobrado;
 
@@ -49,8 +77,9 @@ export default async function EventoDetailPage({ params }: Props) {
   const cobradoAcumulados: (number | null)[] = [];
   let acumulado = 0;
   for (const m of movements) {
-    if (m.type === "INGRESO") acumulado += m.amount;
-    cobradoAcumulados.push(m.type === "INGRESO" ? acumulado : null);
+    const countsAsCobro = m.type === "INGRESO" && m.kind !== "consumo";
+    if (countsAsCobro) acumulado += m.amount;
+    cobradoAcumulados.push(countsAsCobro ? acumulado : null);
   }
 
   return (
@@ -90,6 +119,7 @@ export default async function EventoDetailPage({ params }: Props) {
             Generar presupuesto
           </Link>
           <RegistrarCobroPanel eventId={id} saldo={saldo} accounts={accounts} />
+          {canStart && <IniciarEventoButton eventId={id} />}
         </div>
       </div>
 
@@ -369,6 +399,153 @@ export default async function EventoDetailPage({ params }: Props) {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Consumos (per-table consumption during the running event) */}
+      <Card className="p-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <SectionTitle className="text-base">Consumos</SectionTitle>
+            {event.consumosStartedAt && (
+              <span className="inline-flex items-center rounded-full border bg-cyan-100/70 text-cyan-900 border-cyan-200 px-2.5 py-0.5 text-xs font-medium">
+                {consumosOpen ? "Abierto" : "Cerrado"}
+              </span>
+            )}
+            {clientBillPaid && (
+              <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
+                Pagado {clientPaidAt ? new Date(clientPaidAt).toLocaleDateString("es-AR") : ""}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {consumosOpen && (
+              <>
+                <Link href={`/eventos/${id}/consumos`} className={cn(buttonVariants({ variant: "outline" }))}>
+                  Registrar consumos
+                </Link>
+                <CerrarConsumosButton eventId={id} />
+              </>
+            )}
+            {event.consumosClosedAt && (
+              <Link
+                href={`/eventos/${id}/consumos/reporte`}
+                target="_blank"
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
+                Ver reporte
+              </Link>
+            )}
+            {event.consumosClosedAt && clientPending > 0 && (
+              <RegistrarPagoConsumosPanel eventId={id} total={clientPending} accounts={accounts} />
+            )}
+          </div>
+        </div>
+
+        {!event.consumosStartedAt ? (
+          <EmptyState
+            icon={UtensilsCrossed}
+            title="Evento no iniciado"
+            description={
+              canStart
+                ? "Iniciá el evento para registrar los consumos de cada mesa."
+                : "Los consumos se registran con el evento en curso (solo eventos confirmados)."
+            }
+            className="py-8"
+          />
+        ) : consumos.length === 0 ? (
+          <EmptyState
+            icon={UtensilsCrossed}
+            title="Sin consumos registrados"
+            description="Registrá lo que pida cada mesa durante el evento."
+            className="py-8"
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
+                <tr>
+                  <th className="px-3 py-2 text-left">Mesa</th>
+                  <th className="px-3 py-2 text-left">Insumo</th>
+                  <th className="px-3 py-2 text-left">Paga</th>
+                  <th className="px-3 py-2 text-center">Cant.</th>
+                  <th className="px-3 py-2 text-right">Precio/u</th>
+                  <th className="px-3 py-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {consumos.map((c) => (
+                  <tr key={c.id} className="hover:bg-muted/40 transition-colors">
+                    <td className="px-3 py-2">{tableLabel(c.tableNumber)}</td>
+                    <td className="px-3 py-2 font-medium">{c.insumo.name}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {c.payerType === "INVITADO"
+                        ? c.payerLabel
+                        : PAYER_TYPE_LABELS[c.payerType as PayerType] ?? c.payerType}
+                      {c.paid && (
+                        <span className="ml-1.5 inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2 py-0.5 text-xs font-medium">
+                          Pagado
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-center">{c.qty}</td>
+                    <td className="px-3 py-2 text-right">{fmt(c.unitPrice)}</td>
+                    <td className="px-3 py-2 text-right font-medium">{fmt(consumoLineTotal(c))}</td>
+                  </tr>
+                ))}
+                <tr className="font-semibold">
+                  <td className="px-3 py-2" colSpan={5}>Total consumos</td>
+                  <td className="px-3 py-2 text-right">{fmt(consumosSummary.total)}</td>
+                </tr>
+                {invitados.length > 0 && (
+                  <tr>
+                    <td className="px-3 py-2 text-muted-foreground" colSpan={5}>
+                      Cuenta del cliente {clientBillPaid ? "(pagada)" : "(pendiente)"}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {fmt(clientLines.reduce((s, l) => s + consumoLineTotal(l), 0))}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Self-paying guests, chargeable at any moment after start. */}
+        {invitados.length > 0 && (
+          <div className="mt-4 border-t border-border/60 pt-4 space-y-2">
+            <p className="text-sm font-medium">Invitados</p>
+            <ul className="space-y-1.5 text-sm">
+              {invitados.map((g) => (
+                <li key={g.label} className="flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    {g.label}
+                    {g.paid ? (
+                      <span className="ml-1.5 inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2 py-0.5 text-xs font-medium">
+                        Pagado
+                      </span>
+                    ) : (
+                      <span className="ml-1.5 inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2 py-0.5 text-xs font-medium">
+                        Pendiente
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <span className="font-medium">{fmt(g.pendingTotal > 0 ? g.pendingTotal : g.total)}</span>
+                    {!g.paid && (
+                      <CobrarInvitadoPanel
+                        eventId={id}
+                        payerLabel={g.label}
+                        total={g.pendingTotal}
+                        accounts={accounts}
+                      />
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </Card>

@@ -16,8 +16,10 @@ export function resolvePaidState(
 ): EventState | null {
   if (totalPrice <= 0) return null;
 
-  // Terminal / manual states are never auto-changed.
-  if (current === "CERRADO" || current === "SUSPENDIDO") return null;
+  // Terminal / manual states are never auto-changed. EN_CURSO is also manual:
+  // while the event is running the badge must keep saying "En curso" — staff
+  // closes it explicitly once the party ends, regardless of payments.
+  if (current === "CERRADO" || current === "SUSPENDIDO" || current === "EN_CURSO") return null;
 
   const fullyPaid = cobrado >= totalPrice;
 

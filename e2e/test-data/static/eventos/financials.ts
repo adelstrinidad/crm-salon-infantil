@@ -29,6 +29,23 @@ export const STAFF_COST = {
   payment: { ratePesos: "2000", hours: "5", owed: 10000 },
 } as const;
 
+// Consumption-bill flow: an insumo priced for events, consumed from two tables
+// while the event is EN_CURSO. Totals derived: price × qty per mesa.
+export const CONSUMOS_BILL = {
+  /** Insumo "Precio evento" in pesos (form input). */
+  eventPricePesos: "1500",
+  /** Starting stock so both captures always fit. */
+  initialStock: 20,
+  mesa1Qty: 2,
+  mesa5Qty: 1,
+  /** 1500 × 2 */
+  mesa1Total: 3000,
+  /** 1500 × 1 */
+  mesa5Total: 1500,
+  /** 1500 × 3 — the bill the client pays at close. */
+  total: 4500,
+} as const;
+
 // Per-event provider cost (snapshotted from the catalog) → owed on Pago prestadores.
 export const PROVIDER_PAYMENT = { costPesos: "1500", owed: 1500 } as const;
 

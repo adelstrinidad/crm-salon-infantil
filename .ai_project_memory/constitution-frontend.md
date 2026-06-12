@@ -124,6 +124,7 @@ lib/                         # Shared logic + types (see backend constitution)
 - **Native `<select>` for in-app dropdowns** — the option list is OS-rendered and unstyleable; use the shadcn `Select` (see §X)
 - **Fixed full-width sidebar with no mobile fallback** — always provide the drawer pattern (see §X)
 - Raw `<input>` / `<select>` with ad-hoc classes instead of the `ui/` primitives — heights/borders drift and rows misalign
+- **`window.confirm()` / `window.alert()` / `window.prompt()`** — native browser dialogs ("localhost:3000 says…") ignore the design system entirely; use `ConfirmDialog`/`ConfirmButton` and inline notices (see §X)
 
 ---
 
@@ -139,6 +140,16 @@ Greenfield design language: warm "Sage & Clay" Montessori palette (tokens in `ap
   - Plain `NativeSelect` only when an empty-string option is required (e.g. "Sin proveedor") and a JS popover isn't worth it.
 - **Hidden inputs** (RHF/GET) must be wrapped with their control in a single `<div>` — never left as a bare `space-y` sibling, or they add a phantom 4px gap that misaligns the field.
 - Inputs/selects use `bg-card`; money via `formatMoney` (cents — see backend constitution).
+
+### Modals & confirmations (one dialog language)
+- **Never native dialogs**: `window.confirm/alert/prompt` are banned — they render browser chrome ("localhost:3000 says…") outside the theme.
+- **Confirmations** → `components/ui/confirm-dialog.tsx`:
+  - `ConfirmButton` for the common "button asks before a server action" case (deletes, closes). Pass the action as `onConfirm`; returning `{ ok: false, error }` keeps the dialog open showing the error.
+  - `ConfirmDialog` (controlled) when the trigger isn't a button (e.g. calendar drag-and-drop confirmation).
+  - Destructive confirmations pass `destructive` so the confirm button uses the destructive style; cancel is always "Cancelar".
+  - The confirm label must NOT duplicate the trigger label when both can be on screen at once (trigger "Cerrar consumos" → confirm "Sí, cerrar") — keeps role-based locators unambiguous.
+- **Custom modals** (forms inside a dialog: cobros, anulación, merma) share the same shell: `fixed inset-0 z-50 bg-black/40` overlay + `bg-card rounded-xl shadow-xl w-full max-w-md p-6` panel, `SectionTitle` header with an `aria-label="Cerrar"` × button, actions row of two `flex-1` buttons (primary first, "Cancelar" outline second).
+- **Error notices** → inline `text-destructive` text or a dismissable `bg-destructive/10` banner — never `window.alert`.
 
 ### Layout & responsiveness (mobile must work)
 - **Responsive shell**: persistent sidebar `hidden lg:flex`; below `lg` a top bar + hamburger opens a slide-over drawer (`components/dashboard/Sidebar.tsx`). `main` is `min-w-0` + `p-4 sm:p-6 lg:p-8` so tables scroll instead of overflowing.

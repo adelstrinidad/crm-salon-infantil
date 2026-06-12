@@ -33,9 +33,13 @@ describe("resolvePaidState", () => {
     expect(resolvePaidState("PAGADO", 100_00, 100_00)).toBeNull();
   });
 
-  it("never auto-changes CERRADO or SUSPENDIDO", () => {
+  it("never auto-changes CERRADO, SUSPENDIDO or EN_CURSO", () => {
     expect(resolvePaidState("CERRADO", 100_00, 100_00)).toBeNull();
     expect(resolvePaidState("SUSPENDIDO", 100_00, 100_00)).toBeNull();
+    // While running, the badge must keep saying "En curso" — staff closes it
+    // manually after the party regardless of payments.
+    expect(resolvePaidState("EN_CURSO", 100_00, 100_00)).toBeNull();
+    expect(resolvePaidState("EN_CURSO", 40_00, 100_00)).toBeNull();
   });
 
   it("returns null when the event has no price", () => {

@@ -132,8 +132,10 @@ export async function registrarCobro(eventId: string, data: CobroValues) {
   // Default a description so the movement isn't blank on the Movimientos list.
   const description = data.description || `Cobro — ${event.name}`;
 
+  // kind: null excludes consumption-bill payments — they are income but never
+  // count against the event price (totalPrice covers services only).
   const previo = await prisma.movement.aggregate({
-    where: { eventId, type: "INGRESO" },
+    where: { eventId, type: "INGRESO", kind: null },
     _sum: { amount: true },
   });
   const cobrado = (previo._sum.amount ?? 0) + data.amount;
@@ -172,7 +174,7 @@ export async function listEventsInRange(start: Date, end: Date) {
 
 // A confirmed booking occupies the venue; quotes and suspended events do not.
 // Only these states block (and are blocked by) another event in the same slot.
-export const BLOCKING_STATES: EventState[] = ["RESERVADO", "SENADO", "PAGADO", "CERRADO"];
+export const BLOCKING_STATES: EventState[] = ["RESERVADO", "SENADO", "PAGADO", "EN_CURSO", "CERRADO"];
 
 export function isBlockingState(state: EventState): boolean {
   return BLOCKING_STATES.includes(state);

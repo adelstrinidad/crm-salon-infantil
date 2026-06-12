@@ -4,6 +4,7 @@ export enum EventStateLabel {
   RESERVADO = "Reservado",
   SENADO = "Señado",
   PAGADO = "Pagado",
+  EN_CURSO = "En curso",
   CERRADO = "Cerrado",
   SUSPENDIDO = "Suspendido",
   PRESUPUESTADO = "Presupuestado",

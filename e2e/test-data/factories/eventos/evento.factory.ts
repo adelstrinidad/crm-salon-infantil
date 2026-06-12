@@ -14,3 +14,12 @@ export function generateEvento(overrides?: Partial<EventoBasics>): EventoBasics 
     ...overrides,
   };
 }
+
+/**
+ * Unique self-paying-guest label for consumos flows (payerLabel groups lines
+ * per guest, so the token keeps groups distinct across runs).
+ * @returns {string}
+ */
+export function generateInvitadoLabel(): string {
+  return `E2E ${faker.person.firstName()} ${faker.number.int({ min: 100, max: 999 })}`;
+}

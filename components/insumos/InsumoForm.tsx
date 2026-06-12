@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import {
-  insumoSchema,
-  InsumoFormValues,
+  insumoFormInputSchema,
+  InsumoFormInput,
   INSUMO_UNIT_LABELS,
   INSUMO_UNITS,
 } from "@/lib/insumos/schema";
@@ -24,8 +24,8 @@ import {
 import { cn } from "@/lib/utils";
 
 type Props = {
-  onSubmit: (data: InsumoFormValues) => Promise<{ ok: boolean; error?: string }>;
-  defaultValues?: Partial<InsumoFormValues>;
+  onSubmit: (data: InsumoFormInput) => Promise<{ ok: boolean; error?: string }>;
+  defaultValues?: Partial<InsumoFormInput>;
   submitLabel: string;
   cancelHref?: string;
 };
@@ -40,12 +40,13 @@ export function InsumoForm({ onSubmit, defaultValues, submitLabel, cancelHref = 
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<InsumoFormValues>({
-    resolver: zodResolver(insumoSchema),
+  } = useForm<InsumoFormInput>({
+    resolver: zodResolver(insumoFormInputSchema),
     defaultValues: {
       unit: "unidad",
       stockQty: 0,
       minStock: 0,
+      eventPrice: "0",
       ...defaultValues,
     },
   });
@@ -79,7 +80,7 @@ export function InsumoForm({ onSubmit, defaultValues, submitLabel, cancelHref = 
             <Select
               items={INSUMO_UNIT_LABELS}
               value={watchUnit ?? ""}
-              onValueChange={(v) => setValue("unit", v as InsumoFormValues["unit"], { shouldValidate: true })}
+              onValueChange={(v) => setValue("unit", v as InsumoFormInput["unit"], { shouldValidate: true })}
             >
               <SelectTrigger className="w-full" aria-label="Unidad">
                 <SelectValue placeholder="Seleccionar…" />
@@ -105,6 +106,11 @@ export function InsumoForm({ onSubmit, defaultValues, submitLabel, cancelHref = 
           <Label htmlFor="minStock">Stock mínimo</Label>
           <Input id="minStock" type="number" min="0" step="1" {...register("minStock", { valueAsNumber: true })} />
           {errors.minStock && <p className="text-sm text-destructive">{errors.minStock.message}</p>}
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="eventPrice">Precio evento ($)</Label>
+          <Input id="eventPrice" type="number" min="0" step="0.01" {...register("eventPrice")} />
+          {errors.eventPrice && <p className="text-sm text-destructive">{errors.eventPrice.message}</p>}
         </div>
       </div>
 

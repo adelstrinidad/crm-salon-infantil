@@ -60,6 +60,7 @@ describe("insumo CRUD", () => {
       unit: "kg",
       stockQty: 4,
       minStock: 1,
+      eventPrice: 0,
       notes: "",
     });
     const found = await getInsumo(created.id);
@@ -70,16 +71,17 @@ describe("insumo CRUD", () => {
   });
 
   it("updates fields", async () => {
-    const created = await createInsumo({ name: "Bolsas", unit: "caja", stockQty: 10, minStock: 2 });
-    await updateInsumo(created.id, { name: "Bolsas grandes", unit: "caja", stockQty: 8, minStock: 3 });
+    const created = await createInsumo({ name: "Bolsas", unit: "caja", stockQty: 10, minStock: 2, eventPrice: 0 });
+    await updateInsumo(created.id, { name: "Bolsas grandes", unit: "caja", stockQty: 8, minStock: 3, eventPrice: 150000 });
     const found = await getInsumo(created.id);
     expect(found?.name).toBe("Bolsas grandes");
     expect(found?.stockQty).toBe(8);
     expect(found?.minStock).toBe(3);
+    expect(found?.eventPrice).toBe(150000);
   });
 
   it("deletes", async () => {
-    const created = await createInsumo({ name: "Temp", unit: "unidad", stockQty: 0, minStock: 0 });
+    const created = await createInsumo({ name: "Temp", unit: "unidad", stockQty: 0, minStock: 0, eventPrice: 0 });
     await deleteInsumo(created.id);
     expect(await getInsumo(created.id)).toBeNull();
   });

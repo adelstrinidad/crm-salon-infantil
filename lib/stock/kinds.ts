@@ -4,6 +4,7 @@
 export const STOCK_KIND_LABELS = {
   compra: "Compra",
   consumo: "Consumo",
+  "consumo-evento": "Consumo evento",
   ajuste: "Ajuste",
   merma: "Merma",
 } as const;
