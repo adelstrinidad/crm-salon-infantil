@@ -41,10 +41,6 @@ test.describe("Eventos — lifecycle de cobro", () => {
         await expect(eventoDetailPage.collectedRow(money(collectedAfterPartial))).toBeVisible();
         await expect(eventoDetailPage.balanceRow(money(balanceAfterPartial))).toBeVisible();
         await expect(eventoDetailPage.stateBadge(EventStateLabel.PAGADO)).toHaveCount(0);
-        // The cobro with no manual note gets the default description.
-        await expect(
-          eventoDetailPage.movementCell(new RegExp(Messages.COBRO_DEFAULT_LABEL)),
-        ).toBeVisible();
       });
 
       await test.step("When the remaining amount is collected", async () => {
@@ -55,6 +51,13 @@ test.describe("Eventos — lifecycle de cobro", () => {
         await expect(eventoDetailPage.stateBadge(EventStateLabel.PAGADO)).toBeVisible();
         await expect(eventoDetailPage.collectedRow(money(servicePrice))).toBeVisible();
         await expect(eventoDetailPage.balanceRow(money(0))).toBeVisible();
+        // The cobro with no manual note gets the default description. The full
+        // movement table now lives behind "Ver detalle" (assert last — the modal
+        // makes the rest of the page inert).
+        await eventoDetailPage.openMovimientosDetalle();
+        await expect(
+          eventoDetailPage.movementCell(new RegExp(Messages.COBRO_DEFAULT_LABEL)),
+        ).toBeVisible();
       });
     },
   );

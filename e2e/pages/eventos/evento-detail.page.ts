@@ -124,6 +124,43 @@ export class EventoDetailPage {
     return this.page.getByRole("group", { name: new RegExp(`^${label} `) });
   }
 
+  // ── Inline payment (prestadores / personal pending rows) ───────────────────
+
+  /**
+   * The inline "Pagar" button inside the row of a prestador or empleado.
+   * @param {string} name - Row name (provider/staff).
+   * @returns {Locator}
+   */
+  pagarButton(name: string): Locator {
+    return this.rowByText(name).getByRole("button", { name: "Pagar" });
+  }
+
+  /**
+   * The "Pagado …" badge inside a prestador/empleado row (visible after settling).
+   * @param {string} name - Row name.
+   * @returns {Locator}
+   */
+  pagadoBadge(name: string): Locator {
+    return this.rowByText(name).getByText(/^Pagado/);
+  }
+
+  /**
+   * Settle a pending prestador/empleado line inline from the detail page: expand
+   * the row's "Pagar", then confirm with the default account.
+   * @param {string} name - Row name (provider/staff).
+   * @returns {Promise<void>}
+   */
+  async pagarInline(name: string): Promise<void> {
+    await this.pagarButton(name).click();
+    await this.rowByText(name).getByRole("button", { name: "Confirmar" }).click();
+  }
+
+  // ── Resultado del evento rollup (Contabilidad card) ─────────────────────────
+
+  get resultadoEventoHeading(): Locator {
+    return this.page.getByRole("heading", { name: "Resultado del evento" });
+  }
+
   /** Open the consumos "Ver detalle" modal (per-table line breakdown). */
   async openConsumosDetalle(): Promise<void> {
     await this.page.getByRole("button", { name: "Ver detalle de consumos" }).click();
