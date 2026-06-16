@@ -82,15 +82,23 @@ export default async function EditarEventoPage({ params }: Props) {
 
       <hr />
 
-      <EventServicePicker eventId={id} lines={event.services} available={allServices} />
+      {/* Anchor ids + scroll-margin let the detail-page "Agregar …" CTAs deep
+          link straight to the right picker (e.g. /editar#prestadores). */}
+      <div id="servicios" className="scroll-mt-6">
+        <EventServicePicker eventId={id} lines={event.services} available={allServices} />
+      </div>
 
       <hr />
 
-      <EventProviderPicker eventId={id} lines={event.providers} available={allProviders} />
+      <div id="prestadores" className="scroll-mt-6">
+        <EventProviderPicker eventId={id} lines={event.providers} available={allProviders} />
+      </div>
 
       <hr />
 
-      <EventStaffPicker eventId={id} lines={event.staff} available={allStaff} />
+      <div id="personal" className="scroll-mt-6">
+        <EventStaffPicker eventId={id} lines={event.staff} available={allStaff} />
+      </div>
 
       <hr />
 

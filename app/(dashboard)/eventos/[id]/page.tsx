@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SectionTitle } from "@/components/ui/section-title";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Money, moneyToneClass, signTone } from "@/components/ui/money";
+import { Money, moneyToneClass } from "@/components/ui/money";
 import { computeEventFinancials } from "@/lib/events/financials";
 import { formatMoney } from "@/lib/money";
 import { formatHHMM, staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
@@ -17,14 +17,14 @@ import { CobrarInvitadoPanel } from "./CobrarInvitadoPanel";
 import { IniciarEventoButton, CerrarConsumosButton } from "./ConsumosLifecycleButtons";
 import { getEventConsumos, STARTABLE_STATES } from "@/lib/consumos/consumoService";
 import {
-  computeConsumosSummary,
-  consumoLineTotal,
+  computeConsumosFinancials,
   splitConsumosByPayer,
   pendingClientTotal,
 } from "@/lib/consumos/calc";
-import { tableLabel, PAYER_TYPE_LABELS, type PayerType } from "@/lib/consumos/schema";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Sparkles, Users, UserRound, ArrowLeftRight, UtensilsCrossed } from "lucide-react";
+import { Sparkles, Users, UserRound, ArrowLeftRight, UtensilsCrossed, Plus } from "lucide-react";
+import { MovimientosDetailModal } from "./MovimientosDetailModal";
+import { ConsumosDetailModal } from "./ConsumosDetailModal";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -32,6 +32,21 @@ const fmt = formatMoney;
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeStyle: "short" }).format(new Date(d));
+}
+
+// Empty-state CTA: services / providers / staff are added on the edit page
+// (autosave pickers live there), so the button links there instead of
+// duplicating the pickers on this read-only detail page.
+function EditCta({ id, label, anchor }: { id: string; label: string; anchor: string }) {
+  return (
+    <Link
+      href={`/eventos/${id}/editar#${anchor}`}
+      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+    >
+      <Plus className="size-4" />
+      {label}
+    </Link>
+  );
 }
 
 export default async function EventoDetailPage({ params }: Props) {
@@ -47,7 +62,10 @@ export default async function EventoDetailPage({ params }: Props) {
 
   // Consumption session status drives which actions the Consumos card offers.
   const consumosOpen = event.consumosStartedAt != null && event.consumosClosedAt == null;
-  const consumosSummary = computeConsumosSummary(consumos);
+  // Consumo money split (Vendido / Cobrado / Pendiente) for the card summary.
+  // Cost/margin intentionally omitted — insumos carry no purchase cost on record.
+  const consumosFin = computeConsumosFinancials(consumos);
+  const consumosMesas = new Set(consumos.map((c) => c.tableNumber)).size;
   const canStart = event.consumosStartedAt == null && STARTABLE_STATES.includes(event.state);
   // Client bill vs self-paying guests: settled separately.
   const { cliente: clientLines, invitados } = splitConsumosByPayer(consumos);
@@ -81,6 +99,29 @@ export default async function EventoDetailPage({ params }: Props) {
     if (countsAsCobro) acumulado += m.amount;
     cobradoAcumulados.push(countsAsCobro ? acumulado : null);
   }
+
+  // Flattened, serializable rows for the "Ver detalle" movements modal.
+  const movimientoRows = movements.map((m, i) => ({
+    id: m.id,
+    date: new Date(m.date).toISOString(),
+    description: m.description,
+    accountName: m.account.name,
+    type: m.type,
+    amount: m.amount,
+    acumulado: cobradoAcumulados[i],
+  }));
+
+  // Plain rows for the "Ver detalle" consumos modal (per-table breakdown).
+  const consumoRows = consumos.map((c) => ({
+    id: c.id,
+    tableNumber: c.tableNumber,
+    insumoName: c.insumo.name,
+    payerType: c.payerType,
+    payerLabel: c.payerLabel,
+    qty: c.qty,
+    unitPrice: c.unitPrice,
+    paid: c.paid,
+  }));
 
   return (
     <div className="space-y-8">
@@ -227,7 +268,8 @@ export default async function EventoDetailPage({ params }: Props) {
           <EmptyState
             icon={Sparkles}
             title="Sin servicios asignados"
-            description="Agregá servicios desde la edición del evento para armar el presupuesto."
+            description="Agregá servicios al evento para armar el presupuesto."
+            action={<EditCta id={id} label="Agregar servicios" anchor="servicios" />}
             className="py-8"
           />
         ) : (
@@ -294,7 +336,8 @@ export default async function EventoDetailPage({ params }: Props) {
           <EmptyState
             icon={Users}
             title="Sin prestadores asignados"
-            description="Asigná prestadores desde la edición del evento."
+            description="Asigná prestadores al evento."
+            action={<EditCta id={id} label="Agregar prestadores" anchor="prestadores" />}
             className="py-8"
           />
         ) : (
@@ -345,7 +388,8 @@ export default async function EventoDetailPage({ params }: Props) {
           <EmptyState
             icon={UserRound}
             title="Sin personal asignado"
-            description="Asigná empleados desde la edición del evento."
+            description="Asigná empleados al evento."
+            action={<EditCta id={id} label="Asignar personal" anchor="personal" />}
             className="py-8"
           />
         ) : (
@@ -462,54 +506,36 @@ export default async function EventoDetailPage({ params }: Props) {
             className="py-8"
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
-                <tr>
-                  <th className="px-3 py-2 text-left">Mesa</th>
-                  <th className="px-3 py-2 text-left">Insumo</th>
-                  <th className="px-3 py-2 text-left">Paga</th>
-                  <th className="px-3 py-2 text-center">Cant.</th>
-                  <th className="px-3 py-2 text-right">Precio/u</th>
-                  <th className="px-3 py-2 text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {consumos.map((c) => (
-                  <tr key={c.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="px-3 py-2">{tableLabel(c.tableNumber)}</td>
-                    <td className="px-3 py-2 font-medium">{c.insumo.name}</td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {c.payerType === "INVITADO"
-                        ? c.payerLabel
-                        : PAYER_TYPE_LABELS[c.payerType as PayerType] ?? c.payerType}
-                      {c.paid && (
-                        <span className="ml-1.5 inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2 py-0.5 text-xs font-medium">
-                          Pagado
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-center">{c.qty}</td>
-                    <td className="px-3 py-2 text-right">{fmt(c.unitPrice)}</td>
-                    <td className="px-3 py-2 text-right font-medium">{fmt(consumoLineTotal(c))}</td>
-                  </tr>
-                ))}
-                <tr className="font-semibold">
-                  <td className="px-3 py-2" colSpan={5}>Total consumos</td>
-                  <td className="px-3 py-2 text-right">{fmt(consumosSummary.total)}</td>
-                </tr>
-                {invitados.length > 0 && (
-                  <tr>
-                    <td className="px-3 py-2 text-muted-foreground" colSpan={5}>
-                      Cuenta del cliente {clientBillPaid ? "(pagada)" : "(pendiente)"}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {fmt(clientLines.reduce((s, l) => s + consumoLineTotal(l), 0))}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="space-y-4">
+            {/* Summary: Vendido (all lines) / Cobrado (paid) / Pendiente (gap). */}
+            <div className="flex flex-wrap gap-4">
+              {[
+                { label: "Vendido", value: fmt(consumosFin.vendido), tone: "default" as const },
+                { label: "Cobrado", value: fmt(consumosFin.cobrado), tone: "success" as const },
+                {
+                  label: "Pendiente",
+                  value: fmt(consumosFin.pendiente),
+                  tone: consumosFin.pendiente > 0 ? ("loss" as const) : ("success" as const),
+                },
+              ].map(({ label, value, tone }) => (
+                <div
+                  key={label}
+                  role="group"
+                  aria-label={`${label} ${value}`}
+                  className="rounded-lg border border-border bg-card px-4 py-2 text-sm min-w-[120px]"
+                >
+                  <p className="text-muted-foreground text-xs">{label}</p>
+                  <p className={cn("font-semibold text-base", moneyToneClass(tone))}>{value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <ConsumosDetailModal lines={consumoRows} />
+              <p className="text-sm text-muted-foreground">
+                {consumos.length} {consumos.length === 1 ? "línea" : "líneas"} · {consumosMesas}{" "}
+                {consumosMesas === 1 ? "mesa" : "mesas"}
+              </p>
+            </div>
           </div>
         )}
 
@@ -576,47 +602,11 @@ export default async function EventoDetailPage({ params }: Props) {
             className="py-8"
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
-                <tr>
-                  <th className="px-3 py-2 text-left">Fecha</th>
-                  <th className="px-3 py-2 text-left">Descripción</th>
-                  <th className="px-3 py-2 text-left">Cuenta</th>
-                  <th className="px-3 py-2 text-left">Tipo</th>
-                  <th className="px-3 py-2 text-right">Monto</th>
-                  <th className="px-3 py-2 text-right">Acumulado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {movements.map((m, i) => {
-                  const tone = signTone(m.type === "INGRESO" ? 1 : -1);
-                  return (
-                    <tr key={m.id} className="hover:bg-muted/40 transition-colors">
-                      <td className="px-3 py-2 whitespace-nowrap">{new Date(m.date).toLocaleDateString("es-AR")}</td>
-                      <td className="px-3 py-2">{m.description ?? "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{m.account.name}</td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                            tone === "success"
-                              ? "bg-success/10 text-success border-success/20"
-                              : "bg-loss/10 text-loss border-loss/20",
-                          )}
-                        >
-                          {m.type}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-right font-medium">{fmt(m.amount)}</td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">
-                        {cobradoAcumulados[i] !== null ? fmt(cobradoAcumulados[i]!) : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="flex flex-wrap items-center gap-3">
+            <MovimientosDetailModal rows={movimientoRows} />
+            <p className="text-sm text-muted-foreground">
+              {movements.length} {movements.length === 1 ? "movimiento" : "movimientos"} registrados
+            </p>
           </div>
         )}
       </Card>

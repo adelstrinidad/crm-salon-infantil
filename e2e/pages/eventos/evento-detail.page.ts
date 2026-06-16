@@ -115,6 +115,26 @@ export class EventoDetailPage {
   }
 
   /**
+   * A consumo summary stat (Vendido / Cobrado / Pendiente) by its label — the
+   * box's accessible name is "<label> <formattedMoney>".
+   * @param {string} label - "Vendido" | "Cobrado" | "Pendiente".
+   * @returns {Locator}
+   */
+  consumosStat(label: string): Locator {
+    return this.page.getByRole("group", { name: new RegExp(`^${label} `) });
+  }
+
+  /** Open the consumos "Ver detalle" modal (per-table line breakdown). */
+  async openConsumosDetalle(): Promise<void> {
+    await this.page.getByRole("button", { name: "Ver detalle de consumos" }).click();
+  }
+
+  /** Open the movimientos "Ver detalle" modal (full movement table). */
+  async openMovimientosDetalle(): Promise<void> {
+    await this.page.getByRole("button", { name: "Ver detalle de movimientos" }).click();
+  }
+
+  /**
    * Start the event (state → "En curso") and open the consumption window.
    * @returns {Promise<void>}
    */

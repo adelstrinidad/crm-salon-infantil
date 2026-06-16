@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   consumoLineTotal,
   computeConsumosSummary,
+  computeConsumosFinancials,
   splitConsumosByPayer,
   pendingClientTotal,
 } from "./calc";
@@ -95,6 +96,30 @@ describe("splitConsumosByPayer", () => {
     const { cliente, invitados } = splitConsumosByPayer([line("INVITADO")]);
     expect(cliente).toHaveLength(1);
     expect(invitados).toHaveLength(0);
+  });
+});
+
+describe("computeConsumosFinancials", () => {
+  it("returns zeros for no lines", () => {
+    expect(computeConsumosFinancials([])).toEqual({ vendido: 0, cobrado: 0, pendiente: 0 });
+  });
+
+  it("counts every line as vendido and only paid lines as cobrado", () => {
+    const fin = computeConsumosFinancials([
+      { qty: 2, unitPrice: 150_00, paid: true }, // 300_00 paid
+      { qty: 1, unitPrice: 150_00, paid: false }, // 150_00 pending
+    ]);
+    expect(fin.vendido).toBe(450_00);
+    expect(fin.cobrado).toBe(300_00);
+    expect(fin.pendiente).toBe(150_00);
+  });
+
+  it("has no pendiente once all lines are paid", () => {
+    const fin = computeConsumosFinancials([
+      { qty: 2, unitPrice: 150_00, paid: true },
+      { qty: 1, unitPrice: 150_00, paid: true },
+    ]);
+    expect(fin).toEqual({ vendido: 450_00, cobrado: 450_00, pendiente: 0 });
   });
 });
 

@@ -68,6 +68,31 @@ export function pendingClientTotal<T extends ConsumoLine & PayerInfo>(lines: T[]
     .reduce((s, l) => s + consumoLineTotal(l), 0);
 }
 
+// Bill money split by payment status, for the event-detail summary. `vendido`
+// is everything captured (stock already left the shelf, so it's owed);
+// `cobrado` is only the settled lines (those that produced an INGRESO consumo
+// movement); `pendiente` is the gap still to collect. Cost/margin are
+// deliberately left out — an insumo has no purchase cost on record (only a sale
+// `eventPrice`), so a margin here would be guesswork (see event-detail design).
+export type ConsumosFinancials = {
+  vendido: number; // cents, all lines
+  cobrado: number; // cents, paid lines
+  pendiente: number; // cents, vendido − cobrado
+};
+
+export function computeConsumosFinancials(
+  lines: { qty: number; unitPrice: number; paid: boolean }[],
+): ConsumosFinancials {
+  let vendido = 0;
+  let cobrado = 0;
+  for (const line of lines) {
+    const lineTotal = consumoLineTotal(line);
+    vendido += lineTotal;
+    if (line.paid) cobrado += lineTotal;
+  }
+  return { vendido, cobrado, pendiente: vendido - cobrado };
+}
+
 export function computeConsumosSummary(lines: ConsumoLine[]): ConsumosSummary {
   const perTable = new Map<number, { qty: number; total: number }>();
   let total = 0;

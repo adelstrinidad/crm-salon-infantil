@@ -71,7 +71,8 @@ test.describe("Eventos — consumos por mesa", () => {
         await expect(eventoConsumosPage.agregarButton).toHaveCount(0);
         await eventoDetailPage.open(id);
         await expect(eventoDetailPage.verReporteConsumosLink).toBeVisible();
-        await expect(eventoDetailPage.rowByText("Total consumos")).toContainText(money(total));
+        // The card now summarizes the bill — "Vendido" is the full billed total.
+        await expect(eventoDetailPage.consumosStat("Vendido")).toContainText(money(total));
       });
 
       await test.step("When the client pays the bill", async () => {
@@ -81,10 +82,13 @@ test.describe("Eventos — consumos por mesa", () => {
       await test.step("Then the bill is Pagado and the movement is recorded", async () => {
         await expect(eventoDetailPage.consumosPagadoBadge).toBeVisible();
         await expect(eventoDetailPage.registrarPagoConsumosButton).toHaveCount(0);
-        await expect(eventoDetailPage.movementCell(/Consumos —/)).toBeVisible();
         // The consumption payment never counts toward the event price.
         await expect(eventoDetailPage.collectedRow(money(0))).toBeVisible();
         await expect(eventoDetailPage.stateBadge(EventStateLabel.EN_CURSO)).toBeVisible();
+        // The full movement table now lives behind "Ver detalle" (opens an
+        // inert-background modal, so assert it last).
+        await eventoDetailPage.openMovimientosDetalle();
+        await expect(eventoDetailPage.movementCell(/Consumos —/)).toBeVisible();
       });
 
       await test.step("Then the stock ledger shows both per-table deductions", async () => {
