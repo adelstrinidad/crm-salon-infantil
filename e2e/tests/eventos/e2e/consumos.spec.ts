@@ -85,6 +85,11 @@ test.describe("Eventos — consumos por mesa", () => {
         // The consumption payment never counts toward the event price.
         await expect(eventoDetailPage.collectedRow(money(0))).toBeVisible();
         await expect(eventoDetailPage.stateBadge(EventStateLabel.EN_CURSO)).toBeVisible();
+        // …but it IS surfaced in the "Resultado del evento" rollup as collected
+        // consumo income (itemized, never folded into the package profit).
+        await expect(eventoDetailPage.resultadoEventoHeading).toBeVisible();
+        await expect(eventoDetailPage.text("Consumos cobrados")).toBeVisible();
+        await expect(eventoDetailPage.text("Resultado total")).toBeVisible();
         // The full movement table now lives behind "Ver detalle" (opens an
         // inert-background modal, so assert it last).
         await eventoDetailPage.openMovimientosDetalle();

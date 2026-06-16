@@ -25,6 +25,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Sparkles, Users, UserRound, ArrowLeftRight, UtensilsCrossed, Plus } from "lucide-react";
 import { MovimientosDetailModal } from "./MovimientosDetailModal";
 import { ConsumosDetailModal } from "./ConsumosDetailModal";
+import { PagarButton } from "../../pagos/prestadores/PagarButton";
+import { PagarStaffButton } from "../../pagos/personal/PagarStaffButton";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -258,6 +260,30 @@ export default async function EventoDetailPage({ params }: Props) {
               </Money>
             </div>
           </div>
+
+          {/* Resultado del evento: package profit + consumo income, itemized
+              (never blended — consumos count as collected income, not margin,
+              since insumos carry no cost on record). Shown only once the event
+              has consumos, otherwise it would just repeat the profit. */}
+          {consumos.length > 0 && (
+            <div className="space-y-1 mt-4 pt-3 border-t border-border">
+              <SectionTitle className="text-sm mb-1">Resultado del evento</SectionTitle>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Ganancia del paquete</span>
+                <Money value={profit} signed>{fmt(profit)}</Money>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Consumos cobrados</span>
+                <Money tone="success">{fmt(consumosFin.cobrado)}</Money>
+              </div>
+              <div className="flex justify-between border-t border-border/60 pt-1 font-medium">
+                <span>Resultado total</span>
+                <Money value={profit + consumosFin.cobrado} signed>
+                  {fmt(profit + consumosFin.cobrado)}
+                </Money>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
 
@@ -274,7 +300,7 @@ export default async function EventoDetailPage({ params }: Props) {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full max-w-4xl text-sm">
               <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
                 <tr>
                   <th className="px-3 py-2 text-left">Nombre</th>
@@ -307,7 +333,7 @@ export default async function EventoDetailPage({ params }: Props) {
         <Card className="p-5">
           <SectionTitle className="text-base mb-3">Bonificados</SectionTitle>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full max-w-xl text-sm">
               <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
                 <tr>
                   <th className="px-3 py-2 text-left">Servicio</th>
@@ -341,7 +367,7 @@ export default async function EventoDetailPage({ params }: Props) {
             className="py-8"
           />
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full max-w-2xl text-sm">
             <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
               <tr>
                 <th className="px-3 py-2 text-left">Nombre</th>
@@ -361,9 +387,11 @@ export default async function EventoDetailPage({ params }: Props) {
                       <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
                         Pagado {l.paidAt ? new Date(l.paidAt).toLocaleDateString("es-AR") : ""}
                       </span>
+                    ) : accounts.length > 0 ? (
+                      <PagarButton kind="event-provider" id={l.id} accounts={accounts} />
                     ) : (
                       <span className="inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2.5 py-0.5 text-xs font-medium">
-                        Pendiente
+                        Pendiente — sin cuentas
                       </span>
                     )}
                   </td>
@@ -394,7 +422,7 @@ export default async function EventoDetailPage({ params }: Props) {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full max-w-5xl text-sm">
               <thead className="bg-muted/40 text-muted-foreground uppercase text-xs">
                 <tr>
                   <th className="px-3 py-2 text-left">Nombre</th>
@@ -432,9 +460,11 @@ export default async function EventoDetailPage({ params }: Props) {
                           <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
                             Pagado {l.paidAt ? new Date(l.paidAt).toLocaleDateString("es-AR") : ""}
                           </span>
+                        ) : accounts.length > 0 ? (
+                          <PagarStaffButton eventStaffId={l.id} accounts={accounts} />
                         ) : (
                           <span className="inline-flex items-center rounded-full border bg-amber-100/70 text-amber-900 border-amber-200 px-2.5 py-0.5 text-xs font-medium">
-                            Pendiente
+                            Pendiente — sin cuentas
                           </span>
                         )}
                       </td>

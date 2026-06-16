@@ -46,11 +46,11 @@ test.describe("Pagos — pago personal", () => {
         await expect(eventoEditPage.staffMissingFlag).toHaveCount(0);
       });
 
-      await test.step("Then the event detail shows the assignment as Pendiente", async () => {
+      await test.step("Then the event detail offers an inline payment for the assignment", async () => {
         await eventoDetailPage.open(id);
-        await expect(
-          eventoDetailPage.rowByText(staff.name).getByText(Messages.PAYMENT_PENDING),
-        ).toBeVisible();
+        // Pending lines now expose an inline "Pagar" button instead of a static
+        // "Pendiente" badge (payable here or on the dedicated /pagos page below).
+        await expect(eventoDetailPage.pagarButton(staff.name)).toBeVisible();
       });
 
       await test.step("And paying the owed amount marks it Pagado", async () => {

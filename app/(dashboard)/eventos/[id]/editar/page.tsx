@@ -41,8 +41,9 @@ export default async function EditarEventoPage({ params }: Props) {
     ]);
   if (!event) return notFound();
 
-  const { serviceCost, servicePrice, providerCost, staffCost, totalBonificado, totalCost, subtotal, profit } =
-    computeEventFinancials(event);
+  // Edit page only needs a light live preview of the package price/profit while
+  // composing (the full breakdown lives on the detail page's "Contabilidad").
+  const { subtotal, profit } = computeEventFinancials(event);
 
   const defaultValues: EventFormInput = {
     name: event.name,
@@ -107,22 +108,14 @@ export default async function EditarEventoPage({ params }: Props) {
       <hr />
 
       <div className="space-y-2 text-sm">
-        <SectionTitle>Resumen financiero</SectionTitle>
-        <div className="grid grid-cols-2 gap-1 max-w-xs">
-          <span className="text-muted-foreground">Precio servicios</span>
-          <span>{formatMoney(servicePrice)}</span>
-          <span className="text-muted-foreground">Costo servicios</span>
-          <span>{formatMoney(serviceCost)}</span>
-          <span className="text-muted-foreground">Costo prestadores</span>
-          <span>{formatMoney(providerCost)}</span>
-          <span className="text-muted-foreground">Costo personal</span>
-          <span>{formatMoney(staffCost)}</span>
-          <span className="text-muted-foreground">Total bonificado</span>
-          <span className="text-accent">-{formatMoney(totalBonificado)}</span>
-          <span className="text-muted-foreground font-medium">Subtotal</span>
+        <SectionTitle>Resumen del paquete</SectionTitle>
+        <p className="text-xs text-muted-foreground max-w-sm">
+          Vista rápida del precio y la ganancia mientras armás el evento. El detalle
+          completo y los consumos del evento se ven en la página del evento.
+        </p>
+        <div className="grid grid-cols-2 gap-1 max-w-xs pt-1">
+          <span className="text-muted-foreground font-medium">Precio total</span>
           <span className="font-medium">{formatMoney(subtotal)}</span>
-          <span className="text-muted-foreground font-medium">Costo total</span>
-          <span className="font-medium">{formatMoney(totalCost)}</span>
           <span className="text-muted-foreground font-medium">Ganancia estimada</span>
           <Money value={profit} signed className="font-medium">
             {formatMoney(profit)}
