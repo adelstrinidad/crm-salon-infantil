@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { insumoSchema, InsumoFormValues } from "@/lib/insumos/schema";
+import { insumoSchema, InsumoFormInput } from "@/lib/insumos/schema";
 import { createInsumo, updateInsumo, deleteInsumo } from "@/lib/insumos/insumoService";
 import { stockAdjustSchema, type StockAdjustInput } from "@/lib/stock/schema";
 import { adjustStock } from "@/lib/stock/stockService";
@@ -9,7 +9,7 @@ import { requireSession } from "@/lib/auth/session";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 
-export async function createInsumoAction(data: InsumoFormValues): Promise<ActionResult> {
+export async function createInsumoAction(data: InsumoFormInput): Promise<ActionResult> {
   await requireSession();
   const parsed = insumoSchema.safeParse(data);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
@@ -18,7 +18,7 @@ export async function createInsumoAction(data: InsumoFormValues): Promise<Action
   return { ok: true };
 }
 
-export async function updateInsumoAction(id: string, data: InsumoFormValues): Promise<ActionResult> {
+export async function updateInsumoAction(id: string, data: InsumoFormInput): Promise<ActionResult> {
   await requireSession();
   const parsed = insumoSchema.safeParse(data);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };

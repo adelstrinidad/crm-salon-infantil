@@ -17,6 +17,7 @@ enum EventState {
   RESERVADO     // confirmed reservation
   SENADO        // deposit ("seña") received
   PAGADO        // fully paid
+  EN_CURSO      // event running right now (consumption capture enabled)
   CERRADO       // closed / complete
   SUSPENDIDO    // cancelled / suspended
 }
@@ -56,6 +57,13 @@ model Event {
   details     String?
   notes       String?
   totalPrice  Int                @default(0) // stored in cents (centavos)
+  // Consumption (consumos) session lifecycle. "Iniciar evento" stamps
+  // consumosStartedAt and moves state to EN_CURSO; "Cerrar consumos" stamps
+  // consumosClosedAt and freezes the lines. Payment state lives on each
+  // EventConsumo line (paid/paidAt) because the bill can be settled in parts:
+  // one payment for the client's lines plus one per self-paying guest.
+  consumosStartedAt DateTime?
+  consumosClosedAt  DateTime?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   client      Client?            @relation(fields: [clientId], references: [id])
@@ -63,6 +71,7 @@ model Event {
   providers   EventProvider[]
   bonificados EventBonificado[]
   staff       EventStaff[]
+  consumos    EventConsumo[]
 
   @@index([startAt])
   @@index([state])
@@ -92,11 +101,13 @@ model Insumo {
   unit        String       @default("unidad")
   stockQty    Int          @default(0) // current on-hand count, whole units
   minStock    Int          @default(0) // low-stock alert threshold
+  eventPrice  Int          @default(0) // cents — what the client pays per unit consumed at an event
   notes       String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   compraLines CompraLine[]
   movements   StockMovement[]
+  consumos    EventConsumo[]
 
   @@index([name])
 }
@@ -159,6 +170,37 @@ model CompraLine {
 
   @@index([compraId])
   @@index([insumoId])
+}
+
+// ─── EventConsumo (per-table consumption during a running event) ─────────────
+// One line per item a table requests while the event is EN_CURSO. The space has
+// a fixed number of tables (TABLE_COUNT in lib/consumos/schema.ts); tableNumber
+// records which one asked. `unitPrice` snapshots Insumo.eventPrice at capture
+// time so later catalog edits never move an already-recorded bill. Recording a
+// line deducts stock through the StockMovement ledger (kind "consumo-evento");
+// removing it appends the reversing ledger row. Stock entries are NOT linked by
+// FK on purpose: deleting an event must not silently restore consumed stock.
+model EventConsumo {
+  id          String   @id @default(cuid())
+  eventId     String
+  insumoId    String
+  tableNumber Int // 1..TABLE_COUNT (Mesa 1–5)
+  qty         Int // whole units consumed
+  unitPrice   Int // cents per unit — snapshot of Insumo.eventPrice at capture
+  // Who owes this line. CLIENTE lines form the organizer's bill (settled in
+  // one payment at close); INVITADO lines are owed by a self-paying guest,
+  // identified by payerLabel, and can be charged at any time per guest.
+  payerType   String   @default("CLIENTE") // "CLIENTE" | "INVITADO"
+  payerLabel  String? // who the guest is (e.g. "Tío Juan") — required for INVITADO
+  paid        Boolean  @default(false)
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  insumo      Insumo   @relation(fields: [insumoId], references: [id])
+
+  @@index([eventId])
+  @@index([insumoId])
+  @@index([payerType])
 }
 
 // ─── Service catalog ─────────────────────────────────────────────────────────
@@ -300,6 +342,11 @@ model Movement {
   accountId     String
   toAccountId   String?      // only for TRANSFERENCIA
   type          MovementType
+  // Discriminator for special INGRESO flavors. null = regular movement (cobros,
+  // manual entries); "consumo" = payment of an event's consumption bill. Kept
+  // separate so the event's Cobrado/Saldo (which compare against totalPrice)
+  // never count the consumption bill, while account balances still do.
+  kind          String?
   amount        Int          // stored in cents (centavos)
   description   String?
   date          DateTime     @default(now())
@@ -313,6 +360,31 @@ model Movement {
   @@index([eventId])
   @@index([accountId])
   @@index([toAccountId])
+}
+
+// ─── Audit: removed consumption lines ─────────────────────────────────────────
+// Append-only snapshot taken when a consumption line is voided (anulación).
+// Every void requires the manager approval code and a reason; the reason drives
+// what happened to stock (most reasons restore it, "merma" reclassifies the
+// loss — see lib/consumos/removalReasons.ts). No FK to Event/Insumo on purpose:
+// the audit must survive deletions. Surfaced in the event's consumos report.
+model RemovedConsumo {
+  id                String   @id @default(cuid())
+  eventId           String // loose ref (no FK), for grouping
+  eventName         String // snapshot
+  insumoName        String // snapshot
+  tableNumber       Int
+  qty               Int
+  unitPrice         Int // cents at capture time
+  reason            String // RemovalReason key (arrepentimiento | error-carga | error-entrega | merma | otro)
+  reasonText        String? // free text, required when reason = "otro"
+  payerType         String   @default("CLIENTE") // snapshot of who owed the voided line
+  payerLabel        String?
+  originalCreatedAt DateTime // the removed line's createdAt
+  removedAt         DateTime @default(now())
+
+  @@index([eventId])
+  @@index([reason])
 }
 
 // ─── Audit: removed event lines ───────────────────────────────────────────────

@@ -1,16 +1,18 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-dialog";
 import { deleteProviderAction } from "./actions";
 
 export function DeleteProviderButton({ id }: { id: string }) {
-  async function handleDelete() {
-    if (!window.confirm("¿Eliminar este prestador?")) return;
-    await deleteProviderAction(id);
-  }
   return (
-    <Button onClick={handleDelete} variant="destructive" size="sm">
+    <ConfirmButton
+      title="¿Eliminar este prestador?"
+      confirmLabel="Eliminar"
+      destructive
+      size="sm"
+      onConfirm={() => deleteProviderAction(id)}
+    >
       Eliminar
-    </Button>
+    </ConfirmButton>
   );
 }

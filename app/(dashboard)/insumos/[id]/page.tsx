@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { AdjustStockForm } from "@/components/insumos/AdjustStockForm";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -54,6 +55,9 @@ export default async function InsumoDetailPage({ params }: Props) {
                 Bajo (mín. {insumo.minStock})
               </span>
             )}
+          </p>
+          <p className="text-sm text-muted-foreground pt-1">
+            Precio evento: <span className="font-medium text-foreground">{formatMoney(insumo.eventPrice)}</span>
           </p>
           {insumo.notes && <p className="text-sm text-muted-foreground pt-1">{insumo.notes}</p>}
         </Card>

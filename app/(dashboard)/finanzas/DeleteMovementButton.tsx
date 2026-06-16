@@ -1,18 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { ConfirmButton } from "@/components/ui/confirm-dialog";
 import { deleteMovementAction } from "./actions";
 
 export function DeleteMovementButton({ id, redirectTo }: { id: string; redirectTo?: string }) {
   const router = useRouter();
-  async function handle() {
-    if (!window.confirm("¿Eliminar este movimiento?")) return;
-    await deleteMovementAction(id);
-    if (redirectTo) { router.push(redirectTo); router.refresh(); }
-  }
+
   return (
-    <button onClick={handle} className="text-xs text-destructive hover:underline">
+    <ConfirmButton
+      title="¿Eliminar este movimiento?"
+      confirmLabel="Eliminar"
+      destructive
+      variant="ghost"
+      size="xs"
+      className="text-destructive hover:underline"
+      onConfirm={async () => {
+        await deleteMovementAction(id);
+        if (redirectTo) {
+          router.push(redirectTo);
+          router.refresh();
+        }
+      }}
+    >
       Eliminar
-    </button>
+    </ConfirmButton>
   );
 }

@@ -8,6 +8,7 @@ export const EventState = {
   RESERVADO: "RESERVADO",
   SENADO: "SENADO",
   PAGADO: "PAGADO",
+  EN_CURSO: "EN_CURSO",
   CERRADO: "CERRADO",
   SUSPENDIDO: "SUSPENDIDO",
 } as const;

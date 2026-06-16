@@ -13,6 +13,7 @@ import { parsePage, buildPaginated } from "@/lib/pagination";
 import { INSUMO_SORT_OPTIONS, DEFAULT_INSUMO_SORT } from "@/lib/insumos/listFilters";
 import { INSUMO_UNIT_LABELS, type InsumoUnit } from "@/lib/insumos/schema";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 import { DeleteInsumoButton } from "./DeleteInsumoButton";
 import type { Insumo } from "@/app/generated/prisma/client";
 
@@ -126,6 +127,7 @@ export default async function InsumosPage({ searchParams }: Props) {
                   <th className="px-4 py-3 text-left font-medium">Unidad</th>
                   <th className="px-4 py-3 text-right font-medium">Stock</th>
                   <th className="px-4 py-3 text-right font-medium">Mínimo</th>
+                  <th className="px-4 py-3 text-right font-medium">Precio evento</th>
                   <th className="px-4 py-3 text-left font-medium">Notas</th>
                   <th className="px-4 py-3 text-right font-medium">Acciones</th>
                 </tr>
@@ -148,6 +150,7 @@ export default async function InsumosPage({ searchParams }: Props) {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground">{i.minStock}</td>
+                    <td className="px-4 py-3 text-right">{formatMoney(i.eventPrice)}</td>
                     <td className="px-4 py-3 text-muted-foreground">{i.notes ?? "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
@@ -192,6 +195,7 @@ export default async function InsumosPage({ searchParams }: Props) {
                     <p>
                       Stock: <span className="font-medium text-foreground">{i.stockQty}</span> {unitLabel(i.unit)}
                       {" · "}mín. {i.minStock}
+                      {" · "}evento {formatMoney(i.eventPrice)}
                     </p>
                     {i.notes && <p>{i.notes}</p>}
                   </div>

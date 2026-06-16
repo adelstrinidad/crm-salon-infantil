@@ -21,6 +21,7 @@ import { CompraFormPage } from "../../pages/compras/compra-form.page";
 import { EventoFormPage } from "../../pages/eventos/evento-form.page";
 import { EventoEditPage } from "../../pages/eventos/evento-edit.page";
 import { EventoDetailPage } from "../../pages/eventos/evento-detail.page";
+import { EventoConsumosPage } from "../../pages/eventos/evento-consumos.page";
 import { CuentasListPage } from "../../pages/finanzas/cuentas-list.page";
 import { CuentaFormPage } from "../../pages/finanzas/cuenta-form.page";
 import { MovimientosListPage } from "../../pages/movimientos/movimientos-list.page";
@@ -56,6 +57,7 @@ export type PageObjectFixtures = {
   eventoFormPage: EventoFormPage;
   eventoEditPage: EventoEditPage;
   eventoDetailPage: EventoDetailPage;
+  eventoConsumosPage: EventoConsumosPage;
   cuentasListPage: CuentasListPage;
   cuentaFormPage: CuentaFormPage;
   movimientosListPage: MovimientosListPage;
@@ -133,6 +135,9 @@ export const test = base.extend<PageObjectFixtures>({
   },
   eventoDetailPage: async ({ page }, use) => {
     await use(new EventoDetailPage(page));
+  },
+  eventoConsumosPage: async ({ page }, use) => {
+    await use(new EventoConsumosPage(page));
   },
   cuentasListPage: async ({ page }, use) => {
     await use(new CuentasListPage(page));

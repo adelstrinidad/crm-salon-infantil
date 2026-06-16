@@ -92,6 +92,75 @@ export class EventoDetailPage {
     await this.page.getByRole("spinbutton").fill(amountPesos);
     await this.page.getByRole("button", { name: "Cobrar" }).click();
   }
+
+  // ── Consumos (per-table consumption) ───────────────────────────────────────
+
+  get iniciarEventoButton(): Locator {
+    return this.page.getByRole("button", { name: "Iniciar evento" });
+  }
+  get registrarConsumosLink(): Locator {
+    return this.page.getByRole("link", { name: "Registrar consumos" });
+  }
+  get cerrarConsumosButton(): Locator {
+    return this.page.getByRole("button", { name: "Cerrar consumos" });
+  }
+  get verReporteConsumosLink(): Locator {
+    return this.page.getByRole("link", { name: "Ver reporte" });
+  }
+  get registrarPagoConsumosButton(): Locator {
+    return this.page.getByRole("button", { name: "Registrar pago consumos" });
+  }
+  get consumosPagadoBadge(): Locator {
+    return this.page.getByText(/^Pagado \d/).first();
+  }
+
+  /**
+   * A consumo summary stat (Vendido / Cobrado / Pendiente) by its label — the
+   * box's accessible name is "<label> <formattedMoney>".
+   * @param {string} label - "Vendido" | "Cobrado" | "Pendiente".
+   * @returns {Locator}
+   */
+  consumosStat(label: string): Locator {
+    return this.page.getByRole("group", { name: new RegExp(`^${label} `) });
+  }
+
+  /** Open the consumos "Ver detalle" modal (per-table line breakdown). */
+  async openConsumosDetalle(): Promise<void> {
+    await this.page.getByRole("button", { name: "Ver detalle de consumos" }).click();
+  }
+
+  /** Open the movimientos "Ver detalle" modal (full movement table). */
+  async openMovimientosDetalle(): Promise<void> {
+    await this.page.getByRole("button", { name: "Ver detalle de movimientos" }).click();
+  }
+
+  /**
+   * Start the event (state → "En curso") and open the consumption window.
+   * @returns {Promise<void>}
+   */
+  async iniciarEvento(): Promise<void> {
+    await this.iniciarEventoButton.click();
+  }
+
+  /**
+   * Close the consumption bill from the detail page through the themed
+   * ConfirmDialog.
+   * @returns {Promise<void>}
+   */
+  async cerrarConsumos(): Promise<void> {
+    await this.cerrarConsumosButton.click();
+    await this.page.getByRole("button", { name: "Sí, cerrar" }).click();
+  }
+
+  /**
+   * Open the "Registrar pago consumos" modal and confirm the bill payment
+   * (amount is server-computed; only the default account is used).
+   * @returns {Promise<void>}
+   */
+  async registrarPagoConsumos(): Promise<void> {
+    await this.registrarPagoConsumosButton.click();
+    await this.page.getByRole("button", { name: "Cobrar consumos" }).click();
+  }
 }
 
 // money() output contains "$" and "." — escape them for use inside a RegExp.

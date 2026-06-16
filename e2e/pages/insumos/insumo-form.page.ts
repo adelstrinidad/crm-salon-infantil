@@ -5,6 +5,8 @@ export type InsumoFormData = {
   name: string;
   stockQty?: number;
   minStock?: number;
+  /** "Precio evento" in pesos, as typed into the money input. */
+  eventPrice?: string;
   notes?: string;
 };
 
@@ -20,6 +22,9 @@ export class InsumoFormPage {
   }
   get minStockInput(): Locator {
     return this.page.getByLabel("Stock mínimo");
+  }
+  get eventPriceInput(): Locator {
+    return this.page.getByLabel(/Precio evento/);
   }
   get notesInput(): Locator {
     return this.page.getByLabel("Notas");
@@ -49,6 +54,7 @@ export class InsumoFormPage {
     await this.nameInput.fill(data.name);
     if (data.stockQty !== undefined) await this.stockInput.fill(String(data.stockQty));
     if (data.minStock !== undefined) await this.minStockInput.fill(String(data.minStock));
+    if (data.eventPrice !== undefined) await this.eventPriceInput.fill(data.eventPrice);
     if (data.notes) await this.notesInput.fill(data.notes);
   }
 

@@ -1,16 +1,18 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-dialog";
 import { deleteServiceAction } from "./actions";
 
 export function DeleteServiceButton({ id }: { id: string }) {
-  async function handleDelete() {
-    if (!window.confirm("¿Eliminar este servicio?")) return;
-    await deleteServiceAction(id);
-  }
   return (
-    <Button onClick={handleDelete} variant="destructive" size="sm">
+    <ConfirmButton
+      title="¿Eliminar este servicio?"
+      confirmLabel="Eliminar"
+      destructive
+      size="sm"
+      onConfirm={() => deleteServiceAction(id)}
+    >
       Eliminar
-    </Button>
+    </ConfirmButton>
   );
 }

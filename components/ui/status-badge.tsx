@@ -8,6 +8,7 @@ export type EventStateBadge =
   | "RESERVADO"
   | "SENADO"
   | "PAGADO"
+  | "EN_CURSO"
   | "CERRADO"
   | "SUSPENDIDO"
   | "PRESUPUESTADO"
@@ -17,6 +18,7 @@ const STATE_LABEL: Record<EventStateBadge, string> = {
   RESERVADO: "Reservado",
   SENADO: "Señado",
   PAGADO: "Pagado",
+  EN_CURSO: "En curso",
   CERRADO: "Cerrado",
   SUSPENDIDO: "Suspendido",
   PRESUPUESTADO: "Presupuestado",
@@ -29,6 +31,7 @@ const STATE_CLASS: Record<EventStateBadge, string> = {
   RESERVADO:     "bg-blue-100/70 text-blue-900 border-blue-200",
   SENADO:        "bg-amber-100/70 text-amber-900 border-amber-200",
   PAGADO:        "bg-emerald-100/70 text-emerald-900 border-emerald-200",
+  EN_CURSO:      "bg-cyan-100/70 text-cyan-900 border-cyan-200",
   CERRADO:       "bg-muted text-foreground border-border",
   SUSPENDIDO:    "bg-rose-100/70 text-rose-900 border-rose-200",
   PRESUPUESTADO: "bg-violet-100/70 text-violet-900 border-violet-200",

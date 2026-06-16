@@ -29,7 +29,11 @@ export default async function PresupuestoPage({ params }: Props) {
 
   const { servicePrice, totalBonificado, subtotal } = computeEventFinancials(event);
   const totalPrice = event.totalPrice > 0 ? event.totalPrice : subtotal;
-  const cobrado = movements.filter((m) => m.type === "INGRESO").reduce((s, m) => s + m.amount, 0);
+  // Excludes consumption-bill payments (kind "consumo") — the presupuesto
+  // settles the event price only; consumos have their own report.
+  const cobrado = movements
+    .filter((m) => m.type === "INGRESO" && m.kind !== "consumo")
+    .reduce((s, m) => s + m.amount, 0);
   const saldo = totalPrice - cobrado;
 
   return (
