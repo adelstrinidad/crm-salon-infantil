@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Money } from "@/components/ui/money";
 import { Button } from "@/components/ui/button";
 import { PagarStaffButton } from "./PagarStaffButton";
+import { AnularPagoButton } from "@/components/pagos/AnularPagoButton";
 import { formatMoney } from "@/lib/money";
 import { formatHHMM, staffLineCost, effectiveMinutes } from "@/lib/staff/hours";
 import { SelectFilter } from "@/components/ui/select-filter";
@@ -245,6 +246,7 @@ export default async function PagosPersonalPage({ searchParams }: Props) {
                       {!r.removed && !r.paid && registered && accounts.length === 0 && (
                         <span className="text-xs text-muted-foreground">Sin cuentas</span>
                       )}
+                      {!r.removed && r.paid && <AnularPagoButton kind="staff" id={r.id} />}
                     </td>
                   </tr>
                 );

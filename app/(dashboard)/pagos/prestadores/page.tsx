@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Money } from "@/components/ui/money";
 import { Button } from "@/components/ui/button";
 import { PagarButton } from "./PagarButton";
+import { AnularPagoButton } from "@/components/pagos/AnularPagoButton";
 import type { PaymentSourceKind } from "./actions";
 import { formatMoney } from "@/lib/money";
 import { SelectFilter } from "@/components/ui/select-filter";
@@ -246,6 +247,7 @@ export default async function PagosPrestadoresPage({ searchParams }: Props) {
                     {!r.removed && !r.paid && accounts.length === 0 && (
                       <span className="text-xs text-muted-foreground">Sin cuentas</span>
                     )}
+                    {!r.removed && r.paid && <AnularPagoButton kind={r.kind} id={r.id} />}
                   </td>
                 </tr>
               ))}

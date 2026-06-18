@@ -13,6 +13,7 @@ import { SelectFilter } from "@/components/ui/select-filter";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { PagarCompraButton } from "./PagarCompraButton";
+import { AnularPagoButton } from "@/components/pagos/AnularPagoButton";
 
 type Props = {
   searchParams: Promise<{ from?: string; to?: string; proveedorId?: string; estado?: string }>;
@@ -162,6 +163,7 @@ export default async function PagosProveedoresPage({ searchParams }: Props) {
                       {!c.paid && accounts.length === 0 && (
                         <span className="text-xs text-muted-foreground">Sin cuentas</span>
                       )}
+                      {c.paid && <AnularPagoButton kind="compra" id={c.id} />}
                     </td>
                   </tr>
                 ))}
