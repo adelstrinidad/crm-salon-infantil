@@ -146,6 +146,9 @@ model Compra {
   total       Int          @default(0) // cents — sum of line qty × unitCost
   paid        Boolean      @default(false)
   paidAt      DateTime?
+  // EGRESO movement that settled this purchase (see EventProvider.paidMovementId).
+  paidMovementId String?   @unique
+  paidMovement   Movement? @relation("CompraPayment", fields: [paidMovementId], references: [id])
   notes       String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -228,6 +231,9 @@ model EventService {
   qty       Int       @default(1)
   paid      Boolean   @default(false)
   paidAt    DateTime?
+  // EGRESO movement that settled this prestador line (see EventProvider.paidMovementId).
+  paidMovementId String? @unique
+  paidMovement   Movement? @relation("ServicePayment", fields: [paidMovementId], references: [id])
   createdAt DateTime  @default(now())
   event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   service   Service   @relation(fields: [serviceId], references: [id])
@@ -272,6 +278,10 @@ model EventProvider {
   cost       Int       @default(0)
   paid       Boolean   @default(false)
   paidAt     DateTime?
+  // The EGRESO movement that settled this line (set at payment, cleared on
+  // reversal). Lets "Anular pago" reverse the EXACT amount paid, not a recompute.
+  paidMovementId String? @unique
+  paidMovement   Movement? @relation("ProviderPayment", fields: [paidMovementId], references: [id])
   createdAt  DateTime  @default(now())
   event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   provider   Provider  @relation(fields: [providerId], references: [id])
@@ -308,6 +318,9 @@ model EventStaff {
   actualMinutes Int?                        // real minutes logged after the event; null = unregistered
   paid          Boolean   @default(false)
   paidAt        DateTime?
+  // EGRESO movement that settled this staff assignment (see EventProvider.paidMovementId).
+  paidMovementId String? @unique
+  paidMovement   Movement? @relation("StaffPayment", fields: [paidMovementId], references: [id])
   createdAt     DateTime  @default(now())
   event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   staff         Staff     @relation(fields: [staffId], references: [id])
@@ -355,6 +368,12 @@ model Movement {
   updatedAt     DateTime     @updatedAt
   account       Account      @relation("AccountMovements", fields: [accountId], references: [id])
   toAccount     Account?     @relation("AccountInbound", fields: [toAccountId], references: [id])
+  // Back-relations for the payment line this EGRESO settled (at most one of each;
+  // set when a line is paid, cleared when its payment is reversed via "Anular pago").
+  providerPayment EventProvider? @relation("ProviderPayment")
+  servicePayment  EventService?  @relation("ServicePayment")
+  staffPayment    EventStaff?    @relation("StaffPayment")
+  compraPayment   Compra?        @relation("CompraPayment")
 
   @@index([date])
   @@index([eventId])
@@ -407,4 +426,29 @@ model RemovedEventLine {
 
   @@index([kind])
   @@index([eventId])
+}
+
+// ─── Audit: reversed payments ─────────────────────────────────────────────────
+// Append-only snapshot taken when a settled payment is reversed ("Anular pago").
+// Every reversal requires the manager approval code and a reason. The reversal
+// does NOT delete the original EGRESO: it posts a compensating INGRESO (kind
+// "reversal") that nets the account back to zero, so the money trail survives.
+// No FK to Event — the snapshot must outlive event/line deletion.
+model ReversedPayment {
+  id               String   @id @default(cuid())
+  kind             String   // "provider" | "service" | "staff" | "compra"
+  eventId          String?  // loose ref (no FK); null for compra (not event-bound)
+  eventName        String?  // snapshot
+  entityName       String   // provider/staff/prestador/proveedor name snapshot
+  amount           Int      // cents reversed (the exact original EGRESO amount)
+  reason           String   // ReversalReason key
+  reasonText       String?  // free text, required when reason = "otro"
+  originalMovementId String // the EGRESO that was reversed (snapshot, no FK)
+  reversalMovementId String // the compensating INGRESO that was posted (snapshot)
+  originalPaidAt   DateTime // when the line had been paid
+  reversedAt       DateTime @default(now())
+
+  @@index([kind])
+  @@index([eventId])
+  @@index([reason])
 }

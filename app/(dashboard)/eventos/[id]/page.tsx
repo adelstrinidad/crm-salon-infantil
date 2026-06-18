@@ -27,6 +27,7 @@ import { MovimientosDetailModal } from "./MovimientosDetailModal";
 import { ConsumosDetailModal } from "./ConsumosDetailModal";
 import { PagarButton } from "../../pagos/prestadores/PagarButton";
 import { PagarStaffButton } from "../../pagos/personal/PagarStaffButton";
+import { AnularPagoButton } from "@/components/pagos/AnularPagoButton";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -384,9 +385,12 @@ export default async function EventoDetailPage({ params }: Props) {
                   <td className="px-3 py-2 text-right">{fmt(l.cost)}</td>
                   <td className="px-3 py-2">
                     {l.paid ? (
-                      <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
-                        Pagado {l.paidAt ? new Date(l.paidAt).toLocaleDateString("es-AR") : ""}
-                      </span>
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
+                          Pagado {l.paidAt ? new Date(l.paidAt).toLocaleDateString("es-AR") : ""}
+                        </span>
+                        <AnularPagoButton kind="event-provider" id={l.id} />
+                      </div>
                     ) : accounts.length > 0 ? (
                       <PagarButton kind="event-provider" id={l.id} accounts={accounts} />
                     ) : (
@@ -457,9 +461,12 @@ export default async function EventoDetailPage({ params }: Props) {
                       </td>
                       <td className="px-3 py-2">
                         {l.paid ? (
-                          <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
-                            Pagado {l.paidAt ? new Date(l.paidAt).toLocaleDateString("es-AR") : ""}
-                          </span>
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <span className="inline-flex items-center rounded-full border bg-success/10 text-success border-success/20 px-2.5 py-0.5 text-xs font-medium">
+                              Pagado {l.paidAt ? new Date(l.paidAt).toLocaleDateString("es-AR") : ""}
+                            </span>
+                            <AnularPagoButton kind="staff" id={l.id} />
+                          </div>
                         ) : accounts.length > 0 ? (
                           <PagarStaffButton eventStaffId={l.id} accounts={accounts} />
                         ) : (

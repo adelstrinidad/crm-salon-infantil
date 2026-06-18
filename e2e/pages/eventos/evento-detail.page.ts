@@ -155,6 +155,29 @@ export class EventoDetailPage {
     await this.rowByText(name).getByRole("button", { name: "Confirmar" }).click();
   }
 
+  /**
+   * The inline "Anular pago" button inside a settled prestador/empleado row.
+   * @param {string} name - Row name.
+   * @returns {Locator}
+   */
+  anularPagoButton(name: string): Locator {
+    return this.rowByText(name).getByRole("button", { name: "Anular pago" });
+  }
+
+  /**
+   * Reverse a settled payment inline: expand "Anular pago", enter the manager
+   * code (default reason is preselected) and confirm. The row returns to pending.
+   * @param {string} name - Row name (provider/staff).
+   * @param {string} managerCode - Manager approval code.
+   * @returns {Promise<void>}
+   */
+  async anularPagoInline(name: string, managerCode: string): Promise<void> {
+    const row = this.rowByText(name);
+    await this.anularPagoButton(name).click();
+    await row.getByLabel(/Código del encargado/).fill(managerCode);
+    await row.getByRole("button", { name: "Confirmar anulación" }).click();
+  }
+
   // ── Resultado del evento rollup (Contabilidad card) ─────────────────────────
 
   get resultadoEventoHeading(): Locator {

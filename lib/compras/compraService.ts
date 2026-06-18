@@ -5,6 +5,7 @@ import type { CompraValues } from "./schema";
 import { computeCompraTotal } from "./calc";
 import { parseCompraSort } from "./listFilters";
 import { applyStockMovement } from "@/lib/stock/stockService";
+import { postReversal, type ReversalInput } from "@/lib/pagos/pagosService";
 
 // Record a purchase. Atomically: create the Compra + its lines, and raise each
 // line's insumo stock by the purchased qty. The total is derived from the lines
@@ -125,14 +126,14 @@ export async function getCompraPayments(opts: {
 // single transaction (mirrors payProvider/payStaff). Either both commit or
 // neither, so a compra is never marked paid without its cash-outflow movement.
 export async function payCompra(compraId: string, movement: MovementFormValues) {
-  const [, created] = await prisma.$transaction([
-    prisma.compra.update({
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.movement.create({ data: movement });
+    await tx.compra.update({
       where: { id: compraId },
-      data: { paid: true, paidAt: new Date() },
-    }),
-    prisma.movement.create({ data: movement }),
-  ]);
-  return created;
+      data: { paid: true, paidAt: new Date(), paidMovementId: created.id },
+    });
+    return created;
+  });
 }
 
 // Settle a purchase from the Pago proveedores page. The amount is NEVER taken
@@ -160,6 +161,42 @@ export async function settleCompraPayment(
     date: new Date(),
     toAccountId: undefined,
     eventId: undefined,
+  });
+  return { ok: true };
+}
+
+// Reverse a settled purchase payment ("Anular pago"). Mirrors the prestador/
+// staff reversals: keep the original EGRESO, post a compensating INGRESO, return
+// the compra to unpaid, and snapshot the reversal in the append-only audit. The
+// amount is the original movement's, never recomputed.
+export async function reverseCompraPayment(
+  compraId: string,
+  reversal: ReversalInput
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const compra = await prisma.compra.findUnique({
+    where: { id: compraId },
+    include: { proveedor: true, paidMovement: true },
+  });
+  if (!compra) return { ok: false, error: "Compra no encontrada" };
+  if (!compra.paid) return { ok: false, error: "El pago no está registrado" };
+  if (!compra.paidMovement) {
+    return { ok: false, error: "No se encuentra el movimiento original del pago" };
+  }
+
+  await postReversal({
+    kind: "compra",
+    movement: compra.paidMovement,
+    entityName: compra.proveedor.name,
+    eventId: null,
+    eventName: null,
+    description: `Reversión de pago — Compra ${compra.proveedor.name}`,
+    originalPaidAt: compra.paidAt ?? compra.paidMovement.date,
+    reversal,
+    clearLine: (tx) =>
+      tx.compra.update({
+        where: { id: compraId },
+        data: { paid: false, paidAt: null, paidMovementId: null },
+      }),
   });
   return { ok: true };
 }
