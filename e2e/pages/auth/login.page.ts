@@ -1,10 +1,7 @@
 import { Locator, Page } from "@playwright/test";
 import { Routes } from "../../enums/app/routes";
 import { Messages } from "../../enums/app/messages";
-
-// Single seeded admin (auth via env in the app). Override with E2E_ADMIN_* env.
-const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? "admin@salon.local";
-const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "admin1234";
+import { AdminCredentials } from "../../config/credentials";
 
 export class LoginPage {
   constructor(private readonly page: Page) {}
@@ -39,7 +36,7 @@ export class LoginPage {
    * @param {string} [password] - Defaults to the seeded admin password.
    * @returns {Promise<void>}
    */
-  async login(email = ADMIN_EMAIL, password = ADMIN_PASSWORD): Promise<void> {
+  async login(email = AdminCredentials.email, password = AdminCredentials.password): Promise<void> {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.submitButton.click();

@@ -7,9 +7,7 @@ import { generateInsumo } from "../../../test-data/factories/insumos/insumo.fact
 import { CONSUMOS_BILL } from "../../../test-data/static/eventos/financials";
 import { EventStateLabel } from "../../../enums/app/event";
 import { money } from "../../../helpers/util/money";
-
-// Manager approval code for voids — env-driven like the admin credentials.
-const MANAGER_CODE = process.env.E2E_MANAGER_CODE ?? "encargado1234";
+import { MANAGER_CODE } from "../../../config/credentials";
 
 // Full consumption lifecycle through the UI:
 //   create a priced insumo → reserve an event → Iniciar evento (EN_CURSO) →

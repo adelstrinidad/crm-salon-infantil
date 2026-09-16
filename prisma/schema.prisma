@@ -452,3 +452,36 @@ model ReversedPayment {
   @@index([eventId])
   @@index([reason])
 }
+
+// ─── Auth: admin user ─────────────────────────────────────────────────────────
+// The login credential lives here (not in .env) so it can be rotated from the
+// UI. ADMIN_EMAIL / ADMIN_PASSWORD_HASH remain the *bootstrap* source only:
+// the seed (and the first login on a fresh DB) materialize this row from them.
+// passwordHash uses the scrypt "salt:hash" format from lib/auth/password.ts.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  resetTokens PasswordResetToken[]
+}
+
+// ─── Auth: password reset tokens ──────────────────────────────────────────────
+// Emailed reset links. Only the SHA-256 hash of the token is stored, so a DB
+// leak does not hand over working links. Single use (usedAt) and short lived
+// (expiresAt); every still-valid token of a user is invalidated when their
+// password changes by any route.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}

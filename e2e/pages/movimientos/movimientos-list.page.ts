@@ -19,11 +19,16 @@ export class MovimientosListPage {
   }
 
   /**
-   * Open the movements list.
+   * Open the movements list, optionally filtered by a description search.
+   * The list paginates and defaults to the current month, so a spec asserting
+   * its own row MUST pass `q` — otherwise the row can sit on page 2 once the
+   * stateful dev DB accumulates movements.
+   * @param {{ q?: string }} [params] - Optional description search.
    * @returns {Promise<void>}
    */
-  async open(): Promise<void> {
-    await this.page.goto(Routes.MOVIMIENTOS);
+  async open(params?: { q?: string }): Promise<void> {
+    const query = params?.q ? `?q=${encodeURIComponent(params.q)}` : "";
+    await this.page.goto(`${Routes.MOVIMIENTOS}${query}`);
   }
 
   /**

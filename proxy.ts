@@ -6,7 +6,9 @@ import {
   refreshToken,
 } from "@/lib/auth/jwt";
 
-const PUBLIC_PATHS = ["/login"];
+// Unauthenticated surfaces: login and the password-recovery flow (including
+// the /recuperar/<token> link from the reset email).
+const PUBLIC_PATHS = ["/login", "/recuperar"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

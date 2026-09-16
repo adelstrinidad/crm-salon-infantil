@@ -1,5 +1,7 @@
 import { test as base } from "@playwright/test";
 import { LoginPage } from "../../pages/auth/login.page";
+import { RecuperarPage } from "../../pages/auth/recuperar.page";
+import { CuentaPage } from "../../pages/auth/cuenta.page";
 import { SidebarComponent } from "../../pages/components/sidebar.component";
 import { ClientesListPage } from "../../pages/clientes/clientes-list.page";
 import { ClienteFormPage } from "../../pages/clientes/cliente-form.page";
@@ -36,6 +38,8 @@ import { ReportesPage } from "../../pages/reportes/reportes.page";
 // never `new SomePage(page)` inside a spec.
 export type PageObjectFixtures = {
   loginPage: LoginPage;
+  recuperarPage: RecuperarPage;
+  cuentaPage: CuentaPage;
   sidebar: SidebarComponent;
   clientesListPage: ClientesListPage;
   clienteFormPage: ClienteFormPage;
@@ -72,6 +76,12 @@ export type PageObjectFixtures = {
 export const test = base.extend<PageObjectFixtures>({
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
+  },
+  recuperarPage: async ({ page }, use) => {
+    await use(new RecuperarPage(page));
+  },
+  cuentaPage: async ({ page }, use) => {
+    await use(new CuentaPage(page));
   },
   sidebar: async ({ page }, use) => {
     await use(new SidebarComponent(page));

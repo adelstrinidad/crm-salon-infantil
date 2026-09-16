@@ -19,6 +19,9 @@
 
 # next.js
 /.next/
+# dev server log written by scripts/dev-restart.sh --bg
+/.next-dev.log
+
 /out/
 
 # production
@@ -36,6 +39,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# …except the Playwright credential template, which holds only empty keys
+# (the real values live in .env.e2e, which stays ignored by the rule above).
+!.env.e2e.example
 
 # vercel
 .vercel

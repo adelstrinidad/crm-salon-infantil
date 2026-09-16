@@ -57,10 +57,9 @@ test.describe("Pagos — prestador vía servicio", () => {
       });
 
       await test.step("And an EGRESO movement records prestador — servicio — evento", async () => {
-        await movimientosListPage.open();
-        await expect(
-          movimientosListPage.rowByDescription(`Pago ${prestador.name} — ${servicio.name} — ${evento.name}`),
-        ).toBeVisible();
+        const description = `Pago ${prestador.name} — ${servicio.name} — ${evento.name}`;
+        await movimientosListPage.open({ q: description });
+        await expect(movimientosListPage.rowByDescription(description)).toBeVisible();
       });
     },
   );

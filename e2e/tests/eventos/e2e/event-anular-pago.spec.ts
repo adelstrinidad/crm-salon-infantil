@@ -1,9 +1,7 @@
 import { test, expect } from "../../../fixtures/pom/test-options";
 import { generateEvento } from "../../../test-data/factories/eventos/evento.factory";
 import { generatePrestador } from "../../../test-data/factories/prestadores/prestador.factory";
-
-// Manager approval code for reversals — env-driven like the consumos voids.
-const MANAGER_CODE = process.env.E2E_MANAGER_CODE ?? "encargado1234";
+import { MANAGER_CODE } from "../../../config/credentials";
 
 // Reverse a settled payment ("Anular pago") inline from the event detail. A paid
 // prestador line exposes "Anular pago"; reversing it (manager code + reason)

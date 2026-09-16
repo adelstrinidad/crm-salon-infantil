@@ -27,6 +27,8 @@ export async function resetDb() {
   await prisma.account.deleteMany();
   await prisma.client.deleteMany();
   await prisma.eventType.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
+  await prisma.user.deleteMany();
 }
 
 // ── Factories ──────────────────────────────────────────────────────────────
@@ -167,6 +169,7 @@ export function makeMovement(
       | "INVERSION"
       | "RETIRO";
     kind: string;
+    description: string;
     amount: number;
     date: Date;
     toAccountId: string;

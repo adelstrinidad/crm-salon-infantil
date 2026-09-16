@@ -17,7 +17,7 @@ skills in `.claude/skills/`. Read the relevant skill before generating code.
 |---|---|
 | REST API + OpenAPI | **None.** Server Actions only — test via UI outcomes. |
 | `apiRequest` fixture / Zod response schemas / `@api` tests | **N/A.** Do not create. |
-| Auth per environment token | **Single seeded admin** (`admin@salon.local`). `e2e/tests/auth.setup.ts` logs in once → `storageState` (`.auth/admin.json`); the `e2e` project reuses it. Override creds with `E2E_ADMIN_*` env. |
+| Auth per environment token | **Single admin account**. `e2e/tests/auth.setup.ts` logs in once → `storageState` (`.auth/admin.json`); the `e2e` project reuses it. Credentials come from `e2e/config/credentials.ts` (`AdminCredentials`, `MANAGER_CODE`), fed by `.env.e2e` / `E2E_ADMIN_*` / `E2E_MANAGER_CODE` — never hardcode them in a spec or page object. |
 | Generic URLs | Relative paths via `baseURL` (`http://localhost:3000`). Routes in `enums/app/routes.ts`. |
 | Clean per-test DB | **Stateful dev.db**, `workers:1`, `fullyParallel:false`. Achieve isolation with **Faker factories + unique time slots** (`helpers/util/slot.ts`), not DB resets. A confirmed RESERVADO event can't overlap another → events need `uniqueSlot()`. |
 | English UI | **Spanish UI**, English code/identifiers. Reusable UI strings → `enums/app/messages.ts`. Money shown in pesos (`$10.000`, es-AR), stored as cents — build expected strings with `helpers/util/money.ts`. |
