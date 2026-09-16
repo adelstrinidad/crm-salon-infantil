@@ -9,6 +9,7 @@ import {
   createEvent,
   updateEvent,
   deleteEvent,
+  EventNotCleanError,
   rescheduleEvent,
   findBlockingOverlap,
   isBlockingState,
@@ -112,7 +113,13 @@ export async function rescheduleEventAction(
 
 export async function deleteEventAction(id: string): Promise<ActionResult> {
   await requireSession();
-  await deleteEvent(id);
+  try {
+    await deleteEvent(id);
+  } catch (e) {
+    // Only a clean event is deletable; surface the reason in the confirm dialog.
+    if (e instanceof EventNotCleanError) return { ok: false, error: e.message };
+    throw e;
+  }
   revalidatePath("/eventos");
   return { ok: true };
 }

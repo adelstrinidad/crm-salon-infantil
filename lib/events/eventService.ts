@@ -90,7 +90,40 @@ export async function updateEvent(id: string, data: EventFormValues) {
   return prisma.event.update({ where: { id }, data });
 }
 
+// Thrown by deleteEvent when an event is not "clean" enough to remove. The
+// action layer catches it and returns { ok: false, error } so the confirm
+// dialog shows the reason instead of crashing.
+export class EventNotCleanError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EventNotCleanError";
+  }
+}
+
+// Only a financially "clean" event may be deleted. An event is clean when:
+//   1. it has NO linked movements — a cobro (INGRESO), a pago to prestadores/
+//      personal/proveedores (EGRESO), or a consumo payment all create Movement
+//      rows; deleting the event would orphan that accounting and silently erase
+//      the obligations its join rows back; and
+//   2. its state is not EN_CURSO or CERRADO — an event being run or already
+//      closed has live/locked consumos and is not a draft to throw away.
+// Cancel (anular) the movements and/or move the event out of those states first.
+// The Movement.event FK (onDelete: Restrict) enforces rule 1 at the DB level too.
+const UNDELETABLE_STATES: readonly EventState[] = ["EN_CURSO", "CERRADO"];
+
 export async function deleteEvent(id: string) {
+  const event = await prisma.event.findUniqueOrThrow({ where: { id } });
+  if (UNDELETABLE_STATES.includes(event.state)) {
+    throw new EventNotCleanError(
+      "No se puede eliminar un evento en curso o cerrado. Suspéndelo o cambia su estado antes de eliminarlo.",
+    );
+  }
+  const movementCount = await prisma.movement.count({ where: { eventId: id } });
+  if (movementCount > 0) {
+    throw new EventNotCleanError(
+      "No se puede eliminar: el evento tiene movimientos financieros (cobros o pagos). Anula los movimientos antes de eliminarlo.",
+    );
+  }
   return prisma.event.delete({ where: { id } });
 }
 
