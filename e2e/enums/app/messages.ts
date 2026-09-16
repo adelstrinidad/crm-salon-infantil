@@ -19,6 +19,9 @@ export enum Messages {
   STAFF_NEEDS_HOURS = "Registrá las horas",
   STAFF_PAYMENT_LABEL = "Pago personal —",
   COBRO_DEFAULT_LABEL = "Cobro —",
+  // Shown in the delete confirm dialog when an event has linked movements
+  // (cobros/pagos) and so is not "clean" enough to remove.
+  DELETE_BLOCKED_MOVEMENTS = "tiene movimientos financieros",
 
   // Generic
   SAVE_GENERIC = "Guardar cambios",

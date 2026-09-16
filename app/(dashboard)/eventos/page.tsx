@@ -217,7 +217,7 @@ export default async function EventosPage({ searchParams }: Props) {
                         >
                           Editar
                         </Link>
-                        <DeleteButton id={event.id} />
+                        <DeleteButton id={event.id} name={event.name} />
                       </div>
                     </td>
                   </tr>
@@ -258,7 +258,7 @@ export default async function EventosPage({ searchParams }: Props) {
                   >
                     Editar
                   </Link>
-                  <DeleteButton id={event.id} />
+                  <DeleteButton id={event.id} name={event.name} />
                 </div>
               </li>
             ))}

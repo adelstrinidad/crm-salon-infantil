@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { resetDb, makeEvent } from "./setup/db";
+import { resetDb, makeEvent, makeAccount, makeMovement } from "./setup/db";
 import {
   createEvent,
   getEvent,
   updateEvent,
   deleteEvent,
+  EventNotCleanError,
   setEventState,
   rescheduleEvent,
   findBlockingOverlap,
@@ -83,6 +84,36 @@ describe("updateEvent / setEventState / deleteEvent", () => {
     const e = await createEvent(baseEvent);
     await deleteEvent(e.id);
     await expect(getEvent(e.id)).rejects.toThrow();
+  });
+});
+
+describe("deleteEvent guard — only clean events are deletable", () => {
+  it("deletes a RESERVADO event with no movements", async () => {
+    const e = await createEvent({ ...baseEvent, state: "RESERVADO" });
+    await deleteEvent(e.id);
+    await expect(getEvent(e.id)).rejects.toThrow();
+  });
+
+  it("refuses to delete an event with a linked movement (cobro or pago)", async () => {
+    const account = await makeAccount();
+    const e = await createEvent({ ...baseEvent, state: "RESERVADO" });
+    await makeMovement(account.id, { type: "INGRESO", amount: 50_00, eventId: e.id });
+
+    await expect(deleteEvent(e.id)).rejects.toBeInstanceOf(EventNotCleanError);
+    // The event survives the refused delete.
+    expect((await getEvent(e.id)).id).toBe(e.id);
+  });
+
+  it("refuses to delete an event in curso (EN_CURSO)", async () => {
+    const e = await createEvent({ ...baseEvent, state: "EN_CURSO" });
+    await expect(deleteEvent(e.id)).rejects.toBeInstanceOf(EventNotCleanError);
+    expect((await getEvent(e.id)).id).toBe(e.id);
+  });
+
+  it("refuses to delete a closed event (CERRADO)", async () => {
+    const e = await createEvent({ ...baseEvent, state: "CERRADO" });
+    await expect(deleteEvent(e.id)).rejects.toBeInstanceOf(EventNotCleanError);
+    expect((await getEvent(e.id)).id).toBe(e.id);
   });
 });
 

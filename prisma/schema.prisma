@@ -72,6 +72,7 @@ model Event {
   bonificados EventBonificado[]
   staff       EventStaff[]
   consumos    EventConsumo[]
+  movements   Movement[]         @relation("EventMovements")
 
   @@index([startAt])
   @@index([state])
@@ -366,6 +367,12 @@ model Movement {
   eventId       String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  // FK to the event this movement belongs to (cobros INGRESO, pagos EGRESO,
+  // consumo payments). onDelete: Restrict — an event with any movement cannot
+  // be deleted, so its accounting is never orphaned. Deleting requires anular
+  // the movements first (see deleteEvent's "clean" guard). null = movement not
+  // tied to an event (manual entries, transfers).
+  event         Event?       @relation("EventMovements", fields: [eventId], references: [id], onDelete: Restrict)
   account       Account      @relation("AccountMovements", fields: [accountId], references: [id])
   toAccount     Account?     @relation("AccountInbound", fields: [toAccountId], references: [id])
   // Back-relations for the payment line this EGRESO settled (at most one of each;
