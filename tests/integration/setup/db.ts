@@ -29,6 +29,7 @@ export async function resetDb() {
   await prisma.eventType.deleteMany();
   await prisma.passwordResetToken.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.appSetting.deleteMany();
 }
 
 // ── Factories ──────────────────────────────────────────────────────────────

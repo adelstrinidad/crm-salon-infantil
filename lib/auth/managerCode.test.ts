@@ -1,20 +1,20 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
-import { verifyManagerCode } from "./managerCode";
+import { describe, it, expect, beforeEach } from "vitest";
+import { checkManagerCode } from "./managerCode";
 import { hashPassword } from "./password";
 import { __resetAll, RATE_LIMIT } from "./rateLimit";
 
-const ORIGINAL = process.env.MANAGER_CODE_HASH;
+// The stored hash now lives in the AppSetting table (see managerCodeStore.ts);
+// these tests cover the pure comparison + rate limiting by passing the hash in.
+// The DB lookup and the env bootstrap are covered in tests/integration.
+let stored: string;
+const verifyManagerCode = (code: string) => checkManagerCode(code, stored);
 
 beforeEach(async () => {
   __resetAll();
-  process.env.MANAGER_CODE_HASH = await hashPassword("codigo-secreto");
+  stored = await hashPassword("codigo-secreto");
 });
 
-afterAll(() => {
-  process.env.MANAGER_CODE_HASH = ORIGINAL;
-});
-
-describe("verifyManagerCode", () => {
+describe("checkManagerCode", () => {
   it("accepts the right code", async () => {
     expect(await verifyManagerCode("codigo-secreto")).toEqual({ ok: true });
   });
@@ -26,7 +26,7 @@ describe("verifyManagerCode", () => {
   });
 
   it("fails closed when the hash is not configured", async () => {
-    delete process.env.MANAGER_CODE_HASH;
+    stored = undefined as unknown as string;
     const result = await verifyManagerCode("codigo-secreto");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/no configurado/i);

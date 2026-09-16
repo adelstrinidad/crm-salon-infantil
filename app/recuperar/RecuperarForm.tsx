@@ -6,11 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   managerCodeResetSchema,
   requestResetSchema,
+  MAX_MANAGER_CODE_LENGTH,
+  MAX_EMAIL_LENGTH,
   type ManagerCodeResetInput,
   type RequestResetInput,
 } from "@/lib/auth/schema";
@@ -93,10 +96,11 @@ export function RecuperarForm() {
           </p>
           <div className="space-y-1">
             <Label htmlFor="managerCode">Código de encargado</Label>
-            <Input
+            <PasswordInput
               id="managerCode"
-              type="password"
+          secretLabel="Código de encargado"
               autoComplete="off"
+              maxLength={MAX_MANAGER_CODE_LENGTH}
               aria-invalid={!!codeForm.formState.errors.managerCode}
               {...codeForm.register("managerCode")}
             />
@@ -128,6 +132,7 @@ export function RecuperarForm() {
               id="email"
               type="email"
               autoComplete="email"
+              maxLength={MAX_EMAIL_LENGTH}
               aria-invalid={!!mailForm.formState.errors.email}
               {...mailForm.register("email")}
             />

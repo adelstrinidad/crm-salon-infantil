@@ -20,3 +20,26 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
     text: passwordResetBody(resetUrl),
   });
 }
+
+export function managerCodeResetBody(resetUrl: string): string {
+  return [
+    "Pediste restablecer el código de encargado de Salón Infantil.",
+    "",
+    "Abrí este enlace para elegir uno nuevo:",
+    resetUrl,
+    "",
+    `El enlace vence en ${RESET_TOKEN_TTL_MINUTES} minutos y se puede usar una sola vez.`,
+    "Si no lo pediste, ignorá este mensaje: el código no cambia.",
+  ].join("\n");
+}
+
+export async function sendManagerCodeResetEmail(
+  to: string,
+  resetUrl: string
+): Promise<MailOutcome> {
+  return sendMail({
+    to,
+    subject: "Restablecer código de encargado — Salón Infantil",
+    text: managerCodeResetBody(resetUrl),
+  });
+}

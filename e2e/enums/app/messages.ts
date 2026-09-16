@@ -14,6 +14,10 @@ export enum Messages {
   CURRENT_PASSWORD_INVALID = "La contraseña actual es incorrecta",
   RESET_EMAIL_SENT = "te enviamos un enlace",
   RESET_LINK_EXPIRED = "El enlace no es válido o ya expiró",
+  MANAGER_CODE_SUBMIT = "Cambiar código",
+  MANAGER_CODE_UPDATED = "Código actualizado",
+  FORGOT_MANAGER_CODE = "¿Olvidaste el código?",
+  MANAGER_CODE_LINK_SENT = "Te enviamos un enlace al email de la cuenta",
 
   // Global autosave indicator (event edit page)
   SAVED = "Guardado",

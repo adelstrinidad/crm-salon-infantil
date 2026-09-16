@@ -16,15 +16,15 @@ export class RecuperarPage {
   }
 
   get managerCodeInput(): Locator {
-    return this.page.getByLabel("Código de encargado");
+    return this.page.getByLabel("Código de encargado", { exact: true });
   }
 
   get passwordInput(): Locator {
-    return this.page.getByLabel("Nueva contraseña");
+    return this.page.getByLabel("Nueva contraseña", { exact: true });
   }
 
   get confirmPasswordInput(): Locator {
-    return this.page.getByLabel("Repetir contraseña");
+    return this.page.getByLabel("Repetir contraseña", { exact: true });
   }
 
   get submitButton(): Locator {

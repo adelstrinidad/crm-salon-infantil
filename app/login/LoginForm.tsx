@@ -3,8 +3,10 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { loginAction } from "@/lib/auth/actions";
+import { MAX_PASSWORD_LENGTH, MAX_EMAIL_LENGTH } from "@/lib/auth/schema";
 
 const initialState = { error: undefined };
 
@@ -20,16 +22,24 @@ export function LoginForm() {
     <form action={action} className="space-y-4">
       <div className="space-y-1">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required autoComplete="email" />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          maxLength={MAX_EMAIL_LENGTH}
+        />
       </div>
       <div className="space-y-1">
         <Label htmlFor="password">Contraseña</Label>
-        <Input
+        <PasswordInput
           id="password"
+          secretLabel="Contraseña"
           name="password"
-          type="password"
           required
           autoComplete="current-password"
+          maxLength={MAX_PASSWORD_LENGTH}
         />
       </div>
       {state?.error && (

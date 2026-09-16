@@ -28,7 +28,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 | `AUTH_SECRET` | yes | Signing key for session JWTs |
 | `ADMIN_EMAIL` | bootstrap | Email of the admin account, used only to create the first `User` row |
 | `ADMIN_PASSWORD_HASH` | bootstrap | scrypt hash (`salt:hash`) for that first row — generate with `npm run hash-password -- 'clave'` |
-| `MANAGER_CODE_HASH` | yes | scrypt hash of the manager approval code (voids, payment reversals, password recovery) |
+| `MANAGER_CODE_HASH` | bootstrap | scrypt hash of the manager approval code (voids, payment reversals, password recovery); after the first run it lives in the DB and is rotated at /cuenta |
 | `RESEND_API_KEY` | no | Resend API key for outgoing mail. Unset → reset links are printed to the server console instead of emailed |
 | `MAIL_FROM` | with Resend | Sender, e.g. `Salón Infantil <no-reply@tu-dominio.com>` (domain verified in Resend) |
 | `APP_URL` | in production | Public origin used to build links inside emails; falls back to the request host |
@@ -39,8 +39,7 @@ After the first run the login credential lives in the database, not in `.env`: c
 
 1. **Manager code** — `/recuperar`, tab "Código de encargado": enter the manager code and pick a new password. No email needed.
 2. **Emailed link** — `/recuperar`, tab "Enlace por email": a single-use link valid for 1 hour. Without `RESEND_API_KEY`/`MAIL_FROM` the link is written to the server log instead of sent.
-3. **While logged in** — `/cuenta` → "Cambiar contraseña" (asks for the current one).
-4. **Last resort** — with shell access to the server:
+3. **Last resort** — with shell access to the server:
 
    ```bash
    npm run reset-password -- 'nueva-contrasena'
@@ -48,21 +47,21 @@ After the first run the login credential lives in the database, not in `.env`: c
 
    Writes the new hash straight to the database and kills any outstanding reset link. Pass an email as a second argument to create the account when the database has none yet.
 
+There is deliberately no "change password" form behind the login: a new password is always chosen through `/recuperar`, so there is one way in and one way to set it.
+
 ### Changing the manager code
 
-The manager code (`MANAGER_CODE_HASH`) gates voids, payment reversals, and the manager-code password reset. It is the one secret still kept in `.env`, so rotating it — whether it leaked or was forgotten — needs shell access to the server:
+The manager code gates voids, payment reversals, and the manager-code password reset. Like the password, its hash lives in the database (`AppSetting`, key `managerCodeHash`); `MANAGER_CODE_HASH` in `.env` is only the bootstrap value, copied in on first use.
+
+Rotate it at **/cuenta → Código de encargado**. It asks for the **current** code: a logged-in session alone must not be able to replace the gate that authorizes voids and reversals, or it would stop being a factor independent of the login.
+
+If the code itself is lost, the escape hatch needs shell access to the server:
 
 ```bash
-npm run hash-password -- 'nuevo-codigo'   # prints salt:hash
+npm run set-manager-code -- 'nuevo-codigo'
 ```
 
-Paste the output into `MANAGER_CODE_HASH` in `.env` **unquoted** (a stray quote becomes part of the value), then restart so the new value is loaded:
-
-```bash
-npm run dev:restart
-```
-
-There is no UI for this yet: changing it from inside the app would need the current code as confirmation, or it would stop being a second factor independent of the login session.
+Editing `MANAGER_CODE_HASH` in `.env` has no effect once the value has been bootstrapped into the database.
 
 ### Changing the account's email
 

@@ -20,7 +20,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "hash-password": "tsx scripts/hash-password.ts",
     "reset-password": "tsx scripts/reset-password.ts",
-    "set-admin-email": "tsx scripts/set-admin-email.ts"
+    "set-admin-email": "tsx scripts/set-admin-email.ts",
+    "set-manager-code": "tsx scripts/set-manager-code.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
