@@ -6,7 +6,7 @@ import { AdminCredentials, MANAGER_CODE } from "../../../config/credentials";
 // Password recovery. The happy paths deliberately re-set the password to the
 // SAME value the suite logs in with, so the flow is exercised end to end
 // without invalidating the stored admin session for the rest of the run.
-const { email: ADMIN_EMAIL, password: ADMIN_PASSWORD } = AdminCredentials;
+const { password: ADMIN_PASSWORD } = AdminCredentials;
 
 test.describe("Recuperar contraseña", () => {
   test(
@@ -117,24 +117,4 @@ test.describe("Recuperar contraseña", () => {
     });
   });
 
-  test(
-    "changes the password from Mi cuenta with the current one",
-    { tag: "@e2e" },
-    async ({ page, cuentaPage }) => {
-      await test.step("Given the account screen", async () => {
-        await cuentaPage.open();
-        await expect(page.getByText(ADMIN_EMAIL)).toBeVisible();
-      });
-
-      await test.step("When the current password is wrong", async () => {
-        await cuentaPage.changePassword("no-es-la-actual", ADMIN_PASSWORD);
-        await expect(page.getByText(Messages.CURRENT_PASSWORD_INVALID)).toBeVisible();
-      });
-
-      await test.step("Then the right current password updates it", async () => {
-        await cuentaPage.changePassword(ADMIN_PASSWORD, ADMIN_PASSWORD);
-        await expect(page.getByText("Contraseña actualizada")).toBeVisible();
-      });
-    },
-  );
 });

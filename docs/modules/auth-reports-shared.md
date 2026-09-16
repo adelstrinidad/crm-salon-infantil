@@ -97,10 +97,11 @@ Three routes, all landing on `setUserPassword()` (which also deletes the user's 
 
 | Route | Screen | Requires | For |
 |-------|--------|----------|-----|
-| Manager code | `/recuperar` → tab "Código de encargado" | `MANAGER_CODE_HASH` | Locked out, but present at the venue. No email needed. |
+| Manager code | `/recuperar` → tab "Código de encargado" | the manager code | Locked out, but present at the venue. No email needed. |
 | Emailed link | `/recuperar` → tab "Enlace por email", then `/recuperar/<token>` | mail configured | Locked out and away from the venue. |
-| Change password | `/cuenta` (logged in) | current password | Routine rotation. |
 | CLI | `npm run reset-password -- 'nueva' [email]` | shell access to the server | Last resort: password *and* manager code lost, no email. Creates the account when the DB has none. |
+
+The **manager code** follows the same storage pattern: its hash lives in `AppSetting` (key `managerCodeHash`), bootstrapped once from `MANAGER_CODE_HASH`. `changeManagerCodeAction` rotates it and requires the current code — a session alone must not replace the second factor that authorizes voids and reversals. `npm run set-manager-code` is the escape hatch. `verifyManagerCode()` loads the hash and delegates to the pure `checkManagerCode(code, stored)`, which is what the unit tests exercise.
 
 The account's email is changed with `npm run set-admin-email -- 'nuevo@dominio.com'` (`setUserEmail()`), which also drops reset links issued for the old address. Both scripts are thin wrappers over `lib/auth/userService.ts` (`resetAdminPassword()`, `setUserEmail()`), so the CLI and the UI share one implementation.
 

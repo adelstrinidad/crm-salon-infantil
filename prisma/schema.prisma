@@ -483,6 +483,10 @@ model User {
 model PasswordResetToken {
   id        String    @id @default(cuid())
   tokenHash String    @unique
+  // What the link is allowed to change: "password" or "manager-code". A token
+  // issued for one MUST NOT work for the other, so the purpose is checked on
+  // every lookup (see resetTokens.ts).
+  purpose   String    @default("password")
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
@@ -491,4 +495,17 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([purpose])
+}
+
+// ─── App settings ─────────────────────────────────────────────────────────────
+// Small key/value store for operational secrets and settings that must be
+// rotatable from the UI. Today it holds "managerCodeHash" (scrypt "salt:hash",
+// same scheme as the password): MANAGER_CODE_HASH in .env is only the bootstrap
+// source, materialized here on first use so the venue can rotate the code
+// without shell access.
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

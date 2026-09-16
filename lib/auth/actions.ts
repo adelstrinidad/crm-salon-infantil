@@ -3,22 +3,26 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createSession, deleteSession, requireSession } from "./session";
-import { verifyPassword } from "./password";
 import { checkRateLimit, recordFailure, reset } from "./rateLimit";
 import { verifyManagerCode } from "./managerCode";
+import { setManagerCode } from "./managerCodeStore";
 import {
   managerCodeResetSchema,
   tokenResetSchema,
-  changePasswordSchema,
   requestResetSchema,
+  changeManagerCodeSchema,
+  MAX_PASSWORD_LENGTH,
+  MAX_EMAIL_LENGTH,
+  managerCodeTokenSchema,
   type ManagerCodeResetInput,
   type TokenResetInput,
-  type ChangePasswordInput,
   type RequestResetInput,
+  type ChangeManagerCodeInput,
+  type ManagerCodeTokenInput,
 } from "./schema";
 import { verifyCredentials, getSoleUser, setUserPassword, findUserByEmail } from "./userService";
-import { createResetToken, consumeResetToken } from "./resetTokens";
-import { sendPasswordResetEmail } from "@/lib/mail/passwordReset";
+import { createResetToken, consumeResetToken, RESET_PURPOSE } from "./resetTokens";
+import { sendPasswordResetEmail, sendManagerCodeResetEmail } from "@/lib/mail/passwordReset";
 
 // Derive a rate-limit key from the client IP. Behind a proxy/CDN the real IP
 // is the first entry of x-forwarded-for; fall back to a constant so the limit
@@ -50,6 +54,11 @@ export async function loginAction(formData: FormData): Promise<{ error?: string 
   const email = formData.get("email");
   const password = formData.get("password");
   if (typeof email !== "string" || typeof password !== "string") {
+    return { error: "Credenciales incorrectas" };
+  }
+  // Refuse oversized input before it reaches scrypt: this endpoint is
+  // unauthenticated, so hashing an unbounded string is CPU anyone can spend.
+  if (password.length > MAX_PASSWORD_LENGTH || email.length > MAX_EMAIL_LENGTH) {
     return { error: "Credenciales incorrectas" };
   }
 
@@ -143,19 +152,58 @@ export async function resetWithTokenAction(input: TokenResetInput): Promise<Rese
   return { ok: true };
 }
 
-// Route 3 — change the password while logged in (knows the current one).
-export async function changePasswordAction(input: ChangePasswordInput): Promise<ResetResult> {
+// ─── Manager approval code ────────────────────────────────────────────────────
+
+// Rotate the code. Requires the CURRENT code (not just a session), so it stays a
+// factor independent of the login — otherwise anyone with a session could
+// replace the gate that authorizes voids and reversals. verifyManagerCode
+// applies its own rate limit.
+export async function changeManagerCodeAction(
+  input: ChangeManagerCodeInput
+): Promise<ResetResult> {
   await requireSession();
 
-  const parsed = changePasswordSchema.safeParse(input);
+  const parsed = changeManagerCodeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+
+  const current = await verifyManagerCode(parsed.data.currentCode);
+  if (!current.ok) return { ok: false, error: current.error };
+
+  await setManagerCode(parsed.data.code);
+  return { ok: true };
+}
+
+// Forgot the code: email a single-use link to the account's address. Anchors
+// recovery in the owner's mailbox — which an employee working the floor does not
+// have, so the code stays a real second factor.
+export async function requestManagerCodeResetAction(): Promise<ResetResult> {
+  await requireSession();
+
+  const key = `manager-code-reset:${await clientIp()}`;
+  const limit = checkRateLimit(key);
+  if (!limit.allowed) return { ok: false, error: tooManyAttempts(limit.retryAfterSeconds) };
+  recordFailure(key); // every request counts — this endpoint has no "success"
 
   const user = await getSoleUser();
   if (!user) return { ok: false, error: "No hay una cuenta configurada." };
 
-  const currentOk = await verifyPassword(parsed.data.currentPassword, user.passwordHash);
-  if (!currentOk) return { ok: false, error: "La contraseña actual es incorrecta" };
+  const { token } = await createResetToken(user.id, RESET_PURPOSE.managerCode);
+  const url = `${await appOrigin()}/recuperar/codigo/${token}`;
+  await sendManagerCodeResetEmail(user.email, url);
+  return { ok: true };
+}
 
-  await setUserPassword(user.id, parsed.data.password);
+// Spend that link and set the new code. The token's purpose is checked, so a
+// password-reset link can never rotate the manager code.
+export async function resetManagerCodeWithTokenAction(
+  input: ManagerCodeTokenInput
+): Promise<ResetResult> {
+  const parsed = managerCodeTokenSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+
+  const consumed = await consumeResetToken(parsed.data.token, RESET_PURPOSE.managerCode);
+  if (!consumed.ok) return { ok: false, error: consumed.error };
+
+  await setManagerCode(parsed.data.code);
   return { ok: true };
 }

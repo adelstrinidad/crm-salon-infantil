@@ -1,8 +1,9 @@
 // Manager approval code for sensitive floor operations (voiding consumption
 // lines). Single shared code until the app grows multi-user accounts.
 //
-// Storage: MANAGER_CODE_HASH env var, scrypt "salt:hash" format — the same
-// scheme as ADMIN_PASSWORD_HASH (generate with hashPassword from password.ts).
+// Storage: the AppSetting row "managerCodeHash" (scrypt "salt:hash", the same
+// scheme as the password), bootstrapped once from the MANAGER_CODE_HASH env var
+// so it can be rotated from /cuenta — see managerCodeStore.ts.
 // The plaintext code is never persisted or logged.
 //
 // Brute-force defense: attempts share the in-memory fixed-window rate limiter
@@ -12,17 +13,26 @@
 
 import { verifyPassword } from "./password";
 import { checkRateLimit, recordFailure, reset } from "./rateLimit";
+import { getManagerCodeHash } from "./managerCodeStore";
 
 const RATE_KEY = "manager-code";
 
 export type ManagerCodeResult = { ok: true } | { ok: false; error: string };
 
 export async function verifyManagerCode(code: string): Promise<ManagerCodeResult> {
-  const stored = process.env.MANAGER_CODE_HASH;
+  return checkManagerCode(code, await getManagerCodeHash());
+}
+
+// Split from the lookup so the rate-limit and comparison logic stays testable
+// without a database (see managerCode.test.ts).
+export async function checkManagerCode(
+  code: string,
+  stored: string | undefined
+): Promise<ManagerCodeResult> {
   if (!stored) {
     return {
       ok: false,
-      error: "Código de encargado no configurado (MANAGER_CODE_HASH)",
+      error: "Código de encargado no configurado",
     };
   }
 

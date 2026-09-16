@@ -103,6 +103,6 @@ export async function setUserPassword(userId: string, newPassword: string): Prom
   const passwordHash = await hashPassword(newPassword);
   await prisma.$transaction([
     prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
-    prisma.passwordResetToken.deleteMany({ where: { userId } }),
+    prisma.passwordResetToken.deleteMany({ where: { userId, purpose: "password" } }),
   ]);
 }
