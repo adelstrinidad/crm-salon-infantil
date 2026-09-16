@@ -124,6 +124,35 @@ describe("listMovementsFiltered", () => {
     expect(totalEgreso).toBe(4000);
   });
 
+  it("filters by description search (q)", async () => {
+    const acc = await makeAccount();
+    await makeMovement(acc.id, { description: "Pago Catering Sabores — Cumple Mateo" });
+    await makeMovement(acc.id, { description: "Cobro — Baby shower" });
+
+    const { total, rows } = await listMovementsFiltered({ q: "Catering" });
+    expect(total).toBe(1);
+    expect(rows[0].description).toContain("Catering");
+  });
+
+  it("returns nothing when the search matches no description", async () => {
+    const acc = await makeAccount();
+    await makeMovement(acc.id, { description: "Cobro — Baby shower" });
+
+    const { total } = await listMovementsFiltered({ q: "no-existe-xyz" });
+    expect(total).toBe(0);
+  });
+
+  it("combines the search with the other filters", async () => {
+    const acc = await makeAccount();
+    const other = await makeAccount();
+    await makeMovement(acc.id, { type: "EGRESO", description: "Pago prestador DJ" });
+    await makeMovement(acc.id, { type: "INGRESO", description: "Pago prestador DJ" });
+    await makeMovement(other.id, { type: "EGRESO", description: "Pago prestador DJ" });
+
+    const { total } = await listMovementsFiltered({ q: "prestador", type: "EGRESO", accountId: acc.id });
+    expect(total).toBe(1);
+  });
+
   it("filters by date range", async () => {
     const acc = await makeAccount();
     await makeMovement(acc.id, { amount: 1000, date: new Date("2026-01-15") });

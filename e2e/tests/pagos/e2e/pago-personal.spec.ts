@@ -65,10 +65,9 @@ test.describe("Pagos — pago personal", () => {
       });
 
       await test.step("And an EGRESO movement is recorded for the payment", async () => {
-        await movimientosListPage.open();
-        await expect(
-          movimientosListPage.rowByDescription(`${Messages.STAFF_PAYMENT_LABEL} ${staff.name}`),
-        ).toBeVisible();
+        const description = `${Messages.STAFF_PAYMENT_LABEL} ${staff.name}`;
+        await movimientosListPage.open({ q: description });
+        await expect(movimientosListPage.rowByDescription(description)).toBeVisible();
       });
     },
   );

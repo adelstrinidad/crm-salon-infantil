@@ -1,5 +1,11 @@
+import { config as loadEnv } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
 import { StorageStatePaths } from "./e2e/enums/util/storage";
+
+// Credentials for the suite live in .env.e2e (gitignored) so they are set once
+// instead of being typed on every run: E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD,
+// E2E_MANAGER_CODE. Anything already exported in the shell wins.
+loadEnv({ path: ".env.e2e", override: false, quiet: true });
 
 // E2E config. Reuses a running dev server on :3000 if present, otherwise starts
 // one. Tests run serially (workers:1) against the stateful dev.db — specs use

@@ -2,6 +2,8 @@
 // path in a page object or spec. Next.js App Router routes from app/(dashboard).
 export enum Routes {
   LOGIN = "/login",
+  RECUPERAR = "/recuperar",
+  CUENTA = "/cuenta",
 
   CALENDARIO = "/calendario",
 

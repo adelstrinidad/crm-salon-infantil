@@ -218,6 +218,22 @@ async function main() {
     }
   }
 
+  // ─── Admin user ───────────────────────────────────────────────────────────
+  // The login credential lives in the DB (rotatable from the UI); ADMIN_EMAIL /
+  // ADMIN_PASSWORD_HASH are only the bootstrap source. An existing row is left
+  // untouched so a rotated password survives re-seeding.
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminHash = process.env.ADMIN_PASSWORD_HASH;
+  if (adminEmail && adminHash) {
+    const existing = await prisma.user.findFirst();
+    if (!existing) {
+      await prisma.user.create({ data: { email: adminEmail, passwordHash: adminHash } });
+      console.log(`Admin user created: ${adminEmail}`);
+    }
+  } else {
+    console.warn("ADMIN_EMAIL / ADMIN_PASSWORD_HASH not set — no admin user seeded.");
+  }
+
   console.log("Seed complete.");
 }
 

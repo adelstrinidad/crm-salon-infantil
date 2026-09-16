@@ -5,6 +5,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "dev": "next dev",
+    "dev:restart": "bash scripts/dev-restart.sh",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -17,7 +18,9 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
-    "hash-password": "tsx scripts/hash-password.ts"
+    "hash-password": "tsx scripts/hash-password.ts",
+    "reset-password": "tsx scripts/reset-password.ts",
+    "set-admin-email": "tsx scripts/set-admin-email.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

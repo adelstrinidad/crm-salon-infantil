@@ -30,7 +30,7 @@ INGRESO `kind=consumo` movement that never counts toward the event price.
   from `generateEvento` (unique slot).
 
 ## Fase A+B additions
-- **Voids (anulaciones)**: manager-code gate (`E2E_MANAGER_CODE`, default `encargado1234`),
+- **Voids (anulaciones)**: manager-code gate (`MANAGER_CODE` from `e2e/config/credentials.ts`),
   reason enum (merma keeps stock down), append-only audit shown on capture page
   and report. E2E: wrong code rejected → right code voids → audit row visible.
   Integration: per-reason stock handling, paid-line guard, audit snapshots.

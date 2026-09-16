@@ -39,6 +39,7 @@ export async function listMovementsFiltered(opts: {
   to?: Date;
   accountId?: string;
   type?: string;
+  q?: string;
   skip?: number;
   take?: number;
 }) {
@@ -48,6 +49,8 @@ export async function listMovementsFiltered(opts: {
       : {}),
     ...(opts.accountId ? { accountId: opts.accountId } : {}),
     ...(opts.type ? { type: opts.type as MovementFormValues["type"] } : {}),
+    // Free-text search over the description, like the events/clients lists.
+    ...(opts.q ? { description: { contains: opts.q } } : {}),
   };
   const paginate = opts.skip !== undefined && opts.take !== undefined;
   const [rows, total, byType] = await Promise.all([

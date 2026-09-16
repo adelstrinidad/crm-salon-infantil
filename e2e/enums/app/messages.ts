@@ -5,6 +5,15 @@ export enum Messages {
   // Auth
   LOGIN_TITLE = "Salón Infantil",
   LOGIN_SUBMIT = "Ingresar",
+  FORGOT_PASSWORD_LINK = "¿Olvidaste tu contraseña?",
+  RESET_SUBMIT = "Cambiar contraseña",
+  RESET_SEND_LINK = "Enviar enlace",
+  PASSWORD_UPDATED = "tu contraseña fue actualizada",
+  PASSWORDS_MISMATCH = "Las contraseñas no coinciden",
+  MANAGER_CODE_INVALID = "Código de encargado incorrecto",
+  CURRENT_PASSWORD_INVALID = "La contraseña actual es incorrecta",
+  RESET_EMAIL_SENT = "te enviamos un enlace",
+  RESET_LINK_EXPIRED = "El enlace no es válido o ya expiró",
 
   // Global autosave indicator (event edit page)
   SAVED = "Guardado",

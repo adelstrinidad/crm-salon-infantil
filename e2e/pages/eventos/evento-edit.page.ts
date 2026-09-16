@@ -66,7 +66,9 @@ export class EventoEditPage {
     await this.page.getByRole("option", { name: staffName }).click();
     await this.page.getByRole("spinbutton", { name: "Horas" }).fill(hours);
     await this.page.getByRole("button", { name: "Agregar", disabled: false }).click();
-    await expect(this.page.getByText(staffName).first()).toBeVisible();
+    // Same reason as addProvider, but staff render as cards (listitem), not rows:
+    // assert the persisted card instead of loose text that the picker also shows.
+    await expect(this.staffCard(staffName)).toBeVisible();
   }
 
   /**
@@ -118,7 +120,10 @@ export class EventoEditPage {
       await this.page.getByRole("spinbutton", { name: "Costo prestador" }).fill(costPesos);
     }
     await this.page.getByRole("button", { name: "Agregar prestador" }).click();
-    await expect(this.page.getByText(providerName).first()).toBeVisible();
+    // Wait for the PERSISTED row, not just the name: the combobox keeps showing
+    // the chosen provider, so a plain getByText passes even when the autosave
+    // has not committed yet — and the line then never reaches Pago prestadores.
+    await expect(this.page.getByRole("row").filter({ hasText: providerName })).toBeVisible();
   }
 
   /**

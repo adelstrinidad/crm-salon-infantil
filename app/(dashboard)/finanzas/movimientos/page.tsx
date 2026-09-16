@@ -10,12 +10,22 @@ import { parsePage, buildPaginated } from "@/lib/pagination";
 import { formatMoney } from "@/lib/money";
 import { SelectFilter } from "@/components/ui/select-filter";
 import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DeleteMovementButton } from "../DeleteMovementButton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowLeftRight } from "lucide-react";
 
-type Props = { searchParams: Promise<{ from?: string; to?: string; accountId?: string; type?: string; page?: string }> };
+type Props = {
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    accountId?: string;
+    type?: string;
+    q?: string;
+    page?: string;
+  }>;
+};
 
 function localDate(d: Date) {
   const y = d.getFullYear();
@@ -42,6 +52,7 @@ export default async function MovimientosPage({ searchParams }: Props) {
       to,
       accountId: params.accountId || undefined,
       type: params.type || undefined,
+      q: params.q?.trim() || undefined,
       skip: pageParams.skip,
       take: pageParams.take,
     }),
@@ -92,6 +103,21 @@ export default async function MovimientosPage({ searchParams }: Props) {
               allLabel="Todos"
               options={Object.values(MovementType).map((t) => ({ value: t, label: MOVEMENT_TYPE_LABELS[t] }))}
             />
+          </div>
+          <div className="space-y-1 w-full sm:w-56">
+            <label className="text-sm font-medium" htmlFor="q">
+              Buscar
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="q"
+                name="q"
+                defaultValue={params.q ?? ""}
+                placeholder="Descripción…"
+                className="pl-9"
+              />
+            </div>
           </div>
           <Button type="submit">Filtrar</Button>
           <Link href="/finanzas/movimientos" className={cn(buttonVariants({ variant: "outline" }))}>
@@ -204,6 +230,7 @@ export default async function MovimientosPage({ searchParams }: Props) {
             to: params.to,
             accountId: params.accountId,
             type: params.type,
+            q: params.q,
           }}
         />
       )}

@@ -10,11 +10,11 @@
 
 ### Overview
 
-The app uses a **single-admin model** with **JWT-based sessions** stored in HTTP-only cookies. There is no multi-user auth database — credentials (email and hashed password) are stored in environment variables.
+The app uses a **single-admin model** with **JWT-based sessions** stored in HTTP-only cookies. The credential (email + hashed password) lives in the **`User` table**, so it can be rotated from the UI. `ADMIN_EMAIL` / `ADMIN_PASSWORD_HASH` are only the **bootstrap** source: on a database with no user row, `ensureAdminUser()` (and the seed) materialize the row from them; afterwards the DB wins and a stale `.env` cannot undo a rotated password.
 
 **Flow**:
 1. User submits login form (email + password) → `loginAction` server action
-2. `loginAction` verifies against `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH` (env vars)
+2. `loginAction` calls `verifyCredentials()` (`lib/auth/userService.ts`), which hashes even for an unknown email so response time does not reveal whether the account exists
 3. On success, creates a signed JWT token and stores it in an HTTP-only cookie
 4. Subsequent requests: `proxy.ts` verifies the token; if valid, request proceeds; if expired/invalid, redirects to `/login`
 5. Logout deletes the session cookie
@@ -91,6 +91,31 @@ npm run hash-password -- 'your-password'
 # Paste the output into ADMIN_PASSWORD_HASH in .env
 ```
 
+### Password Recovery
+
+Three routes, all landing on `setUserPassword()` (which also deletes the user's outstanding reset links), plus a CLI escape hatch.
+
+| Route | Screen | Requires | For |
+|-------|--------|----------|-----|
+| Manager code | `/recuperar` → tab "Código de encargado" | `MANAGER_CODE_HASH` | Locked out, but present at the venue. No email needed. |
+| Emailed link | `/recuperar` → tab "Enlace por email", then `/recuperar/<token>` | mail configured | Locked out and away from the venue. |
+| Change password | `/cuenta` (logged in) | current password | Routine rotation. |
+| CLI | `npm run reset-password -- 'nueva' [email]` | shell access to the server | Last resort: password *and* manager code lost, no email. Creates the account when the DB has none. |
+
+The account's email is changed with `npm run set-admin-email -- 'nuevo@dominio.com'` (`setUserEmail()`), which also drops reset links issued for the old address. Both scripts are thin wrappers over `lib/auth/userService.ts` (`resetAdminPassword()`, `setUserEmail()`), so the CLI and the UI share one implementation.
+
+**Reset tokens** (`lib/auth/resetTokens.ts` + pure helpers in `resetTokenCrypto.ts`):
+- 32 random bytes in the link; only the SHA-256 hash is stored (`PasswordResetToken.tokenHash`), so a DB leak yields no working link.
+- Single use (`usedAt`, spent atomically via `updateMany … where usedAt: null`) and 60-minute TTL.
+- One live token per user: issuing a new one deletes the previous.
+- `checkResetToken()` renders the form without spending the token; `consumeResetToken()` spends it on submit.
+
+**No account enumeration**: the emailed-link form answers identically for a known and an unknown address, and whether or not mail is configured.
+
+**Rate limits** (`lib/auth/rateLimit.ts`, 5 per 15 min): login per IP, link requests per IP, manager code globally.
+
+**Mail** (`lib/mail/send.ts`): Resend's HTTP API via `fetch` — no SDK dependency. Needs `RESEND_API_KEY` + `MAIL_FROM`; unconfigured, the message (including the reset link) is logged to the server console instead, so local development works with no account. `APP_URL` sets the origin used in the link (falls back to the request host).
+
 ### Login Flow
 
 **File**: `app/login/page.tsx` (Server Component) + `app/login/LoginForm.tsx` (Client Component)
@@ -98,13 +123,14 @@ npm run hash-password -- 'your-password'
 1. **Page** (line 3): Renders a centered login form with title "Salón Infantil"
 2. **Form** (line 11, `LoginForm.tsx`): Renders email + password inputs + submit button
 3. **Submit** (line 13): Calls `loginAction` Server Action via `useActionState` hook
-4. **Server Action** (`lib/auth/actions.ts`, line 7):
+4. **Server Action** (`loginAction` in `lib/auth/actions.ts`):
    - Extracts `email` and `password` from `FormData`
-   - Compares `email` against `ADMIN_EMAIL` (line 11)
-   - Calls `verifyPassword()` (line 14) regardless of email match
-   - If both valid: calls `createSession()`, redirects to `/eventos` (line 21)
-   - If either invalid: returns error message "Credenciales incorrectas" (line 17)
-5. **Error display**: LoginForm renders the error from `useActionState` state (line 35)
+   - Checks the per-IP rate limit before doing any work
+   - Calls `verifyCredentials(email, password)` — looks the user up in the DB and hashes against a placeholder when the email is unknown, so both cases cost the same
+   - If valid: `reset()` the limiter, `createSession()`, redirect to `/eventos`
+   - If invalid: `recordFailure()` and return "Credenciales incorrectas"
+5. **Error display**: LoginForm renders the error from `useActionState` state
+6. **Recovery**: the page also links to `/recuperar` ("¿Olvidaste tu contraseña?")
 
 ### Route Protection
 

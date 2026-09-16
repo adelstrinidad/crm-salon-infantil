@@ -19,7 +19,7 @@ test.describe("Movimientos — CRUD", () => {
       });
 
       await test.step("Then the movement is findable in the list", async () => {
-        await movimientosListPage.open();
+        await movimientosListPage.open({ q: movimiento.description });
         await expect(
           movimientosListPage.rowByDescription(movimiento.description!),
         ).toBeVisible();
